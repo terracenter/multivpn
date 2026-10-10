@@ -1,0 +1,36 @@
+# Binaries & build artifacts
+multivpn
+multivpn.exe
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Logs and databases
+*.log
+logs/
+*.db
+*.sqlite
+*.sqlite3
+
+# Build artifacts
+bin/
+build/
+dist/
+*.exe
+*.out
+*.test
+
+# OS/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
