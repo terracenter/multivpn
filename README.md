@@ -30,7 +30,44 @@ Desarrollado en **Go** como un binario estático único, sin dependencias extern
 
 ---
 
+## 📦 Instalación y Descarga
+
+Tienes dos formas de utilizar MultiVPN:
+
+### Opción 1: Descargar el binario precompilado (Recomendado, no requiere Go)
+Si no tienes Go instalado en tu máquina (por ejemplo, en tu laptop), descarga directamente el binario compilado listo para usar desde [GitHub Releases](https://github.com/terracenter/multivpn/releases):
+
+**En Linux:**
+```bash
+# Descargar el ejecutable
+curl -LO https://github.com/terracenter/multivpn/releases/latest/download/multivpn
+
+# Dar permisos de ejecución
+chmod +x multivpn
+
+# Mover a tu PATH (opcional)
+sudo mv multivpn /usr/local/bin/
+```
+
+**En Windows:**
+Descarga `multivpn.exe` desde [Releases](https://github.com/terracenter/multivpn/releases) y ejecútalo directamente desde la terminal o PowerShell.
+
+---
+
+### Opción 2: Compilar desde el código fuente (Requiere Go 1.22+)
+Si tienes Go instalado y quieres compilarlo localmente:
+```bash
+git clone https://github.com/terracenter/multivpn.git
+cd multivpn
+make build
+```
+Esto generará el archivo `./multivpn` en la raíz del proyecto.
+
+---
+
 ## 🚀 Inicio Rápido
+
+Una vez que tengas el binario `multivpn`:
 
 ### Ejecutar con WebUI Local (Modo Recomendado)
 ```bash
