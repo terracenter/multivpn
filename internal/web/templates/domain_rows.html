@@ -1,0 +1,33 @@
+{{define "domain_rows"}}
+{{range .Domains}}
+<tr id="domain-row-{{.ID}}">
+  <td style="color: var(--muted); font-mono: true;">#{{.ID}}</td>
+  <td>
+    <span class="badge badge-shield">{{.VPNName}}</span>
+  </td>
+  <td>
+    <strong style="color: #60a5fa; font-family: monospace; font-size: 0.95rem;">{{.Domain}}</strong>
+  </td>
+  <td>{{.Description}}</td>
+  <td style="text-align: right; white-space: nowrap;">
+    <button class="btn btn-secondary btn-sm"
+            @click="openEditModal({{.ID}}, {{.VPNID}}, '{{.Domain}}', '{{.Description}}')">
+      ✏️ Editar
+    </button>
+    <button class="btn btn-danger btn-sm"
+            hx-delete="/api/domains/{{.ID}}"
+            hx-target="#domain-row-{{.ID}}"
+            hx-swap="outerHTML"
+            hx-confirm="¿Seguro que deseas eliminar el dominio {{.Domain}}?">
+      🗑️
+    </button>
+  </td>
+</tr>
+{{else}}
+<tr>
+  <td colspan="5" style="text-align: center; color: var(--muted); padding: 2rem;">
+    No se encontraron dominios que coincidan con la búsqueda.
+  </td>
+</tr>
+{{end}}
+{{end}}

@@ -1,0 +1,130 @@
+{{define "content"}}
+<div x-data="{
+  showCreateModal: false,
+  showEditModal: false,
+  editID: 0,
+  editVPNID: 1,
+  editRoute: '',
+  editDescription: '',
+  openEditModal(id, vpnID, route, desc) {
+    this.editID = id;
+    this.editVPNID = vpnID;
+    this.editRoute = route;
+    this.editDescription = desc;
+    this.showEditModal = true;
+  }
+}">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h2 style="margin: 0; font-size: 1.25rem;">Administración de Rutas e IPs (SQLite)</h2>
+      <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--muted);">
+        Subredes y segmentos enrutados a través de las VPNs empresariales.
+      </p>
+    </div>
+    <div>
+      <button class="btn btn-primary" @click="showCreateModal = true">
+        ➕ Agregar IP / Subred
+      </button>
+    </div>
+  </div>
+
+  <!-- Buscador en tiempo real con HTMX -->
+  <div class="search-bar">
+    <span style="font-size: 1.1rem;">🔍</span>
+    <input type="text"
+           name="q"
+           class="search-input"
+           placeholder="Filtrar por IP (ej: 192.168.226), VPN o descripción..."
+           hx-get="/api/routes/search"
+           hx-trigger="keyup changed delay:200ms, search"
+           hx-target="#routes-table-body">
+  </div>
+
+  <!-- Tabla de Rutas -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 60px;">ID</th>
+          <th style="width: 160px;">VPN</th>
+          <th style="width: 220px;">Red / Máscara CIDR</th>
+          <th>Descripción</th>
+          <th style="width: 140px; text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="routes-table-body">
+        {{template "route_rows" .}}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal: Agregar Nueva Ruta -->
+  <div class="modal-overlay" x-show="showCreateModal" x-cloak style="display: none;" @keydown.escape.window="showCreateModal = false">
+    <div class="modal-content" @click.outside="showCreateModal = false">
+      <div class="modal-header">
+        <h3>➕ Agregar Subred / IP</h3>
+        <button class="close-btn" @click="showCreateModal = false">&times;</button>
+      </div>
+      <form hx-post="/api/routes" hx-target="#routes-table-body" hx-swap="outerHTML" @htmx:after-request="showCreateModal = false">
+        <div class="form-group">
+          <label>VPN Destino:</label>
+          <select name="vpn_id" class="form-control" required>
+            {{range .Connections}}
+              <option value="{{.ID}}">{{.Name}} ({{.Empresa}})</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>IP o Red CIDR:</label>
+          <input type="text" name="route" class="form-control" placeholder="ej: 192.168.226.16/28" required>
+        </div>
+        <div class="form-group">
+          <label>Descripción:</label>
+          <input type="text" name="description" class="form-control" placeholder="ej: PVE-VALENCIA-NOC">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" @click="showCreateModal = false">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Ruta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: EDITAR Ruta Existente (Funcionalidad Clave de Edición Amigable) -->
+  <div class="modal-overlay" x-show="showEditModal" x-cloak style="display: none;" @keydown.escape.window="showEditModal = false">
+    <div class="modal-content" @click.outside="showEditModal = false">
+      <div class="modal-header">
+        <h3>✏️ Modificar Ruta #<span x-text="editID"></span></h3>
+        <button class="close-btn" @click="showEditModal = false">&times;</button>
+      </div>
+      <form :action="'/api/routes/' + editID"
+            hx-put=""
+            :hx-put="'/api/routes/' + editID"
+            hx-target="#routes-table-body"
+            hx-swap="outerHTML"
+            @htmx:after-request="showEditModal = false">
+        <div class="form-group">
+          <label>VPN Asociada:</label>
+          <select name="vpn_id" class="form-control" x-model="editVPNID" required>
+            {{range .Connections}}
+              <option value="{{.ID}}">{{.Name}} ({{.Empresa}})</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>IP o Red CIDR:</label>
+          <input type="text" name="route" class="form-control" x-model="editRoute" required>
+        </div>
+        <div class="form-group">
+          <label>Descripción:</label>
+          <input type="text" name="description" class="form-control" x-model="editDescription">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" @click="showEditModal = false">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Actualizar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{{end}}

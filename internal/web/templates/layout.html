@@ -1,0 +1,56 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} - MultiVPN</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/multivpn.css">
+  <script src="/static/htmx.min.js"></script>
+  <script src="/static/alpine.min.js" defer></script>
+</head>
+<body class="dark" x-data="{ activeTab: '{{.ActiveTab}}' }">
+  <div class="container">
+    <header class="header">
+      <div class="title-group">
+        <span style="font-size: 1.75rem;">🌐</span>
+        <div>
+          <h1>MultiVPN <span style="font-size: 0.8rem; font-weight: normal; color: var(--muted);">v{{.Version}} (GPLv3)</span></h1>
+          <p style="margin: 0; font-size: 0.8rem; color: var(--muted);">Gestor de VPNs · Split-Tunneling Estricto · SQLite Sync</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button class="btn btn-secondary btn-sm" htmx:target="#dashboard-area" hx-post="/api/vpns/scan" hx-swap="outerHTML">
+          🔄 Escanear Sistema
+        </button>
+        <button class="btn btn-primary btn-sm" hx-post="/api/vpns/shield-all" hx-swap="none" onclick="alert('Iniciado blindaje de todas las VPNs')">
+          🛡️ Blindar Todas
+        </button>
+      </div>
+    </header>
+
+    <nav class="nav-tabs">
+      <a href="/" class="nav-tab {{if eq .ActiveTab "dashboard"}}active{{end}}">
+        📊 Dashboard & Conexiones
+      </a>
+      <a href="/routes" class="nav-tab {{if eq .ActiveTab "routes"}}active{{end}}">
+        🛣️ Rutas e IPs ({{.Stats.TotalRoutes}})
+      </a>
+      <a href="/domains" class="nav-tab {{if eq .ActiveTab "domains"}}active{{end}}">
+        🌍 Dominios ({{.Stats.TotalDomains}})
+      </a>
+    </nav>
+
+    <main>
+      {{template "content" .}}
+    </main>
+
+    <footer style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between;">
+      <div>MultiVPN — Software Libre bajo licencia GPLv3</div>
+      <div>Persistencia: <code>{{.DBPath}}</code></div>
+    </footer>
+  </div>
+</body>
+</html>
+{{end}}

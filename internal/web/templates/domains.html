@@ -1,0 +1,130 @@
+{{define "content"}}
+<div x-data="{
+  showCreateModal: false,
+  showEditModal: false,
+  editID: 0,
+  editVPNID: 1,
+  editDomain: '',
+  editDescription: '',
+  openEditModal(id, vpnID, domain, desc) {
+    this.editID = id;
+    this.editVPNID = vpnID;
+    this.editDomain = domain;
+    this.editDescription = desc;
+    this.showEditModal = true;
+  }
+}">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h2 style="margin: 0; font-size: 1.25rem;">Administración de Dominios (Salida de Sitios Bloqueados)</h2>
+      <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--muted);">
+        Dominios resueltos dinámicamente y enrutados por el túnel para evadir bloqueos por ubicación geográfica.
+      </p>
+    </div>
+    <div>
+      <button class="btn btn-primary" @click="showCreateModal = true">
+        ➕ Agregar Dominio
+      </button>
+    </div>
+  </div>
+
+  <!-- Buscador en tiempo real con HTMX -->
+  <div class="search-bar">
+    <span style="font-size: 1.1rem;">🔍</span>
+    <input type="text"
+           name="q"
+           class="search-input"
+           placeholder="Filtrar por dominio (ej: claude.ai, openai.com) o descripción..."
+           hx-get="/api/domains/search"
+           hx-trigger="keyup changed delay:200ms, search"
+           hx-target="#domains-table-body">
+  </div>
+
+  <!-- Tabla de Dominios -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 60px;">ID</th>
+          <th style="width: 160px;">VPN</th>
+          <th style="width: 260px;">Nombre de Dominio</th>
+          <th>Descripción</th>
+          <th style="width: 140px; text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="domains-table-body">
+        {{template "domain_rows" .}}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal: Agregar Dominio -->
+  <div class="modal-overlay" x-show="showCreateModal" x-cloak style="display: none;" @keydown.escape.window="showCreateModal = false">
+    <div class="modal-content" @click.outside="showCreateModal = false">
+      <div class="modal-header">
+        <h3>➕ Agregar Dominio</h3>
+        <button class="close-btn" @click="showCreateModal = false">&times;</button>
+      </div>
+      <form hx-post="/api/domains" hx-target="#domains-table-body" hx-swap="outerHTML" @htmx:after-request="showCreateModal = false">
+        <div class="form-group">
+          <label>VPN de Salida:</label>
+          <select name="vpn_id" class="form-control" required>
+            {{range .Connections}}
+              <option value="{{.ID}}">{{.Name}} ({{.Empresa}})</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dominio FQDN:</label>
+          <input type="text" name="domain" class="form-control" placeholder="ej: claude.ai" required>
+        </div>
+        <div class="form-group">
+          <label>Descripción:</label>
+          <input type="text" name="description" class="form-control" placeholder="ej: Acceso a Asistente IA">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" @click="showCreateModal = false">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Dominio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: EDITAR Dominio -->
+  <div class="modal-overlay" x-show="showEditModal" x-cloak style="display: none;" @keydown.escape.window="showEditModal = false">
+    <div class="modal-content" @click.outside="showEditModal = false">
+      <div class="modal-header">
+        <h3>✏️ Modificar Dominio #<span x-text="editID"></span></h3>
+        <button class="close-btn" @click="showEditModal = false">&times;</button>
+      </div>
+      <form :action="'/api/domains/' + editID"
+            hx-put=""
+            :hx-put="'/api/domains/' + editID"
+            hx-target="#domains-table-body"
+            hx-swap="outerHTML"
+            @htmx:after-request="showEditModal = false">
+        <div class="form-group">
+          <label>VPN de Salida:</label>
+          <select name="vpn_id" class="form-control" x-model="editVPNID" required>
+            {{range .Connections}}
+              <option value="{{.ID}}">{{.Name}} ({{.Empresa}})</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dominio FQDN:</label>
+          <input type="text" name="domain" class="form-control" x-model="editDomain" required>
+        </div>
+        <div class="form-group">
+          <label>Descripción:</label>
+          <input type="text" name="description" class="form-control" x-model="editDescription">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" @click="showEditModal = false">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Actualizar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{{end}}

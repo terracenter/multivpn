@@ -1,0 +1,61 @@
+{{define "vpn_card"}}
+<div class="card" id="vpn-card-{{.Name}}">
+  <div>
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">{{.Name}}</h3>
+        <div class="card-meta">
+          Tipo: <strong>{{.Type}}</strong> {{if .Empresa}}· Empresa: <strong>{{.Empresa}}</strong>{{end}}
+        </div>
+      </div>
+      <div>
+        {{if .IsActive}}
+          <span class="badge badge-success">🟢 Activa</span>
+        {{else}}
+          <span class="badge badge-neutral">⚪ Inactiva</span>
+        {{end}}
+      </div>
+    </div>
+
+    <div style="margin: 0.75rem 0;">
+      {{if .HasDefaultGateway}}
+        <div class="badge badge-warn" style="width: 100%; box-sizing: border-box; justify-content: flex-start; padding: 0.4rem 0.6rem;">
+          ⚠️ <strong>Riesgo:</strong> Gateway remoto activo en NM
+        </div>
+      {{else}}
+        <div class="badge badge-shield" style="width: 100%; box-sizing: border-box; justify-content: flex-start; padding: 0.4rem 0.6rem;">
+          🛡️ <strong>Split-Tunneling:</strong> Default Gateway Blindado
+        </div>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="card-actions">
+    {{if .IsActive}}
+      <button class="btn btn-danger btn-sm"
+              hx-post="/api/vpns/down?name={{.Name}}"
+              hx-target="#vpn-card-{{.Name}}"
+              hx-swap="outerHTML">
+        🔴 Desconectar
+      </button>
+    {{else}}
+      <button class="btn btn-success btn-sm"
+              hx-post="/api/vpns/up?name={{.Name}}"
+              hx-target="#vpn-card-{{.Name}}"
+              hx-swap="outerHTML">
+        🟢 Conectar
+      </button>
+    {{end}}
+
+    {{if .HasDefaultGateway}}
+      <button class="btn btn-secondary btn-sm"
+              hx-post="/api/vpns/shield?name={{.Name}}"
+              hx-target="#vpn-card-{{.Name}}"
+              hx-swap="outerHTML"
+              title="Desactiva never-default e ignora auto-rutas">
+        🛡️ Blindar Ahora
+      </button>
+    {{end}}
+  </div>
+</div>
+{{end}}

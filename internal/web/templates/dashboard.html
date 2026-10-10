@@ -1,0 +1,35 @@
+{{define "content"}}
+<div id="dashboard-area">
+  <!-- Acciones globales -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h2 style="margin: 0; font-size: 1.25rem;">Conexiones Administradas</h2>
+      <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--muted);">
+        {{.Stats.ActiveVPNs}} de {{.Stats.TotalVPNs}} conexiones activas · {{.Stats.TotalRoutes}} rutas registradas
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <button class="btn btn-success" hx-post="/api/vpns/up-all" hx-target="#dashboard-area" hx-swap="outerHTML">
+        ⚡ Conectar Todas
+      </button>
+      <button class="btn btn-danger" hx-post="/api/vpns/down-all" hx-target="#dashboard-area" hx-swap="outerHTML">
+        🛑 Desconectar Todas
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid de Tarjetas -->
+  <div class="grid-cards">
+    {{range .Connections}}
+      {{template "vpn_card" .}}
+    {{else}}
+      <div style="grid-column: 1/-1; padding: 3rem; text-align: center; background: var(--surface); border: 1px dashed var(--border); border-radius: 0.5rem;">
+        <p style="color: var(--muted); margin: 0 0 1rem 0;">No se detectaron VPNs registradas en la base de datos.</p>
+        <button class="btn btn-primary" hx-post="/api/vpns/scan" hx-target="#dashboard-area" hx-swap="outerHTML">
+          🔍 Escanear Conexiones de NetworkManager
+        </button>
+      </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
