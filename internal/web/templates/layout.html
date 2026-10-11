@@ -4,53 +4,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{.Title}} - MultiVPN</title>
-  <link rel="stylesheet" href="/static/app.css">
+  <title>{{.Title}} — MultiVPN</title>
+  <!-- Tailwind CSS compilado localmente según estándar SGE -->
+  <link rel="stylesheet" href="/static/tailwind.css">
   <link rel="stylesheet" href="/static/multivpn.css">
+  <!-- HTMX local para reactividad -->
   <script src="/static/htmx.min.js"></script>
-  <script src="/static/alpine.min.js" defer></script>
+  <!-- Alpine.js local para micro-interacciones -->
+  <script defer src="/static/alpine.min.js"></script>
 </head>
-<body class="dark" x-data="{ activeTab: '{{.ActiveTab}}' }">
-  <div class="container">
-    <header class="header">
-      <div class="title-group">
-        <span style="font-size: 1.75rem;">🌐</span>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+  <!-- Navbar Principal Sticky -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Marca y Logo -->
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+          </svg>
+        </div>
         <div>
-          <h1>MultiVPN <span style="font-size: 0.8rem; font-weight: normal; color: var(--muted);">v{{.Version}} (GPLv3)</span></h1>
-          <p style="margin: 0; font-size: 0.8rem; color: var(--muted);">Gestor de VPNs · Split-Tunneling Estricto · SQLite Sync</p>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-lg tracking-tight text-white">MultiVPN</span>
+            <span class="text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full">v{{.Version}}</span>
+            <span class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">GPLv3</span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Split-Tunneling Estricto · SQLite Dual-Sync</p>
         </div>
       </div>
-      <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <button class="btn btn-secondary btn-sm" htmx:target="#dashboard-area" hx-post="/api/vpns/scan" hx-swap="outerHTML">
-          🔄 Escanear Sistema
+
+      <!-- Navegación por Pestañas -->
+      <nav class="flex items-center gap-1 sm:gap-2">
+        <a href="/" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 {{if eq .ActiveTab "dashboard"}}bg-slate-800 text-white shadow-sm{{else}}text-slate-400 hover:text-slate-200 hover:bg-slate-800/50{{end}}">
+          <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="/routes" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 {{if eq .ActiveTab "routes"}}bg-slate-800 text-white shadow-sm{{else}}text-slate-400 hover:text-slate-200 hover:bg-slate-800/50{{end}}">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          <span>Rutas e IPs</span>
+          <span class="text-[11px] font-semibold bg-slate-800/80 text-slate-300 px-1.5 py-0.5 rounded-full">{{.Stats.TotalRoutes}}</span>
+        </a>
+
+        <a href="/domains" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 {{if eq .ActiveTab "domains"}}bg-slate-800 text-white shadow-sm{{else}}text-slate-400 hover:text-slate-200 hover:bg-slate-800/50{{end}}">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          <span>Dominios</span>
+          <span class="text-[11px] font-semibold bg-slate-800/80 text-slate-300 px-1.5 py-0.5 rounded-full">{{.Stats.TotalDomains}}</span>
+        </a>
+      </nav>
+
+      <!-- Acciones de Cabecera -->
+      <div class="flex items-center gap-2">
+        <button class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+                hx-post="/api/vpns/scan"
+                hx-target="#dashboard-area"
+                hx-swap="outerHTML"
+                title="Escanear perfiles configurados en NetworkManager">
+          <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span class="hidden sm:inline">Escanear</span>
         </button>
-        <button class="btn btn-primary btn-sm" hx-post="/api/vpns/shield-all" hx-swap="none" onclick="alert('Iniciado blindaje de todas las VPNs')">
-          🛡️ Blindar Todas
+
+        <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm shadow-indigo-500/20"
+                hx-post="/api/vpns/shield-all"
+                hx-swap="none"
+                onclick="alert('🛡️ Blindaje ejecutado: Default Gateway bloqueado en todas las conexiones.')"
+                title="Desactivar default gateway e ignorar auto-rutas en todas las VPNs">
+          <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span>Blindar Todas</span>
         </button>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <nav class="nav-tabs">
-      <a href="/" class="nav-tab {{if eq .ActiveTab "dashboard"}}active{{end}}">
-        📊 Dashboard & Conexiones
-      </a>
-      <a href="/routes" class="nav-tab {{if eq .ActiveTab "routes"}}active{{end}}">
-        🛣️ Rutas e IPs ({{.Stats.TotalRoutes}})
-      </a>
-      <a href="/domains" class="nav-tab {{if eq .ActiveTab "domains"}}active{{end}}">
-        🌍 Dominios ({{.Stats.TotalDomains}})
-      </a>
-    </nav>
+  <!-- Contenido Central -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {{template "content" .}}
+  </main>
 
-    <main>
-      {{template "content" .}}
-    </main>
-
-    <footer style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between;">
-      <div>MultiVPN — Software Libre bajo licencia GPLv3</div>
-      <div>Persistencia: <code>{{.DBPath}}</code></div>
-    </footer>
-  </div>
+  <!-- Footer Profesional -->
+  <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span>MultiVPN · 100% Software Libre (GPLv3)</span>
+        <span>•</span>
+        <span>Base de Datos: <code class="text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded">{{.DBPath}}</code></span>
+      </div>
+      <div class="text-slate-500">
+        Diseñado bajo el Estándar Oficial Go + HTMX + Alpine.js + Tailwind (Cero Bloat)
+      </div>
+    </div>
+  </footer>
 </body>
 </html>
 {{end}}

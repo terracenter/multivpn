@@ -1,5 +1,5 @@
 {{define "content"}}
-<div x-data="{
+<div class="space-y-6" x-data="{
   showCreateModal: false,
   showEditModal: false,
   editID: 0,
@@ -14,114 +14,165 @@
     this.showEditModal = true;
   }
 }">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+  <!-- Encabezado de Dominios -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h2 style="margin: 0; font-size: 1.25rem;">Administración de Dominios (Salida de Sitios Bloqueados)</h2>
-      <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--muted);">
-        Dominios resueltos dinámicamente y enrutados por el túnel para evadir bloqueos por ubicación geográfica.
+      <h1 class="text-2xl font-bold text-white flex items-center gap-2.5">
+        <svg class="w-7 h-7 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+        </svg>
+        <span>Administración de Dominios (Sitios Bloqueados)</span>
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">
+        Dominios web resueltos concurrentemente en paralelo e inyectados como rutas /32 a través del túnel de salida.
       </p>
     </div>
-    <div>
-      <button class="btn btn-primary" @click="showCreateModal = true">
-        ➕ Agregar Dominio
-      </button>
-    </div>
+
+    <button @click="showCreateModal = true" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 self-start sm:self-auto">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      <span>Nuevo Dominio</span>
+    </button>
   </div>
 
-  <!-- Buscador en tiempo real con HTMX -->
-  <div class="search-bar">
-    <span style="font-size: 1.1rem;">🔍</span>
+  <!-- Barra de Búsqueda Reactiva HTMX -->
+  <div class="relative">
+    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </div>
     <input type="text"
            name="q"
-           class="search-input"
-           placeholder="Filtrar por dominio (ej: claude.ai, openai.com) o descripción..."
+           class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors shadow-sm"
+           placeholder="Buscar en tiempo real por dominio (ej: claude.ai, openai.com) o descripción..."
            hx-get="/api/domains/search"
-           hx-trigger="keyup changed delay:200ms, search"
+           hx-trigger="keyup changed delay:180ms, search"
            hx-target="#domains-table-body">
   </div>
 
-  <!-- Tabla de Dominios -->
-  <div class="table-container">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th style="width: 60px;">ID</th>
-          <th style="width: 160px;">VPN</th>
-          <th style="width: 260px;">Nombre de Dominio</th>
-          <th>Descripción</th>
-          <th style="width: 140px; text-align: right;">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="domains-table-body">
-        {{template "domain_rows" .}}
-      </tbody>
-    </table>
+  <!-- Tabla de Datos Profesional -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-left">
+        <thead>
+          <tr class="bg-slate-950/70 text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-800">
+            <th class="py-3.5 px-4 w-16">ID</th>
+            <th class="py-3.5 px-4 w-44">VPN</th>
+            <th class="py-3.5 px-4 w-72">Nombre de Dominio (FQDN)</th>
+            <th class="py-3.5 px-4">Descripción / Servicio</th>
+            <th class="py-3.5 px-4 text-right w-36">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="domains-table-body" class="divide-y divide-slate-800/40">
+          {{template "domain_rows" .}}
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Modal: Agregar Dominio -->
-  <div class="modal-overlay" x-show="showCreateModal" x-cloak style="display: none;" @keydown.escape.window="showCreateModal = false">
-    <div class="modal-content" @click.outside="showCreateModal = false">
-      <div class="modal-header">
-        <h3>➕ Agregar Dominio</h3>
-        <button class="close-btn" @click="showCreateModal = false">&times;</button>
+  <!-- Modal: Crear Dominio -->
+  <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+       x-show="showCreateModal"
+       x-cloak
+       style="display: none;"
+       @keydown.escape.window="showCreateModal = false">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5"
+         @click.outside="showCreateModal = false">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Agregar Dominio de Salida</span>
+        </h3>
+        <button type="button" class="text-slate-500 hover:text-slate-300 text-xl font-bold" @click="showCreateModal = false">&times;</button>
       </div>
-      <form hx-post="/api/domains" hx-target="#domains-table-body" hx-swap="outerHTML" @htmx:after-request="showCreateModal = false">
-        <div class="form-group">
-          <label>VPN de Salida:</label>
-          <select name="vpn_id" class="form-control" required>
+
+      <form hx-post="/api/domains" hx-target="#domains-table-body" hx-swap="outerHTML" @htmx:after-request="showCreateModal = false" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">VPN de Salida:</label>
+          <select name="vpn_id" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none" required>
             {{range .Connections}}
               <option value="{{.ID}}">{{.Name}} ({{.Empresa}})</option>
             {{end}}
           </select>
         </div>
-        <div class="form-group">
-          <label>Dominio FQDN:</label>
-          <input type="text" name="domain" class="form-control" placeholder="ej: claude.ai" required>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Dominio (FQDN):</label>
+          <input type="text" name="domain" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none font-mono" placeholder="ej: claude.ai" required>
         </div>
-        <div class="form-group">
-          <label>Descripción:</label>
-          <input type="text" name="description" class="form-control" placeholder="ej: Acceso a Asistente IA">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Descripción:</label>
+          <input type="text" name="description" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none" placeholder="ej: Acceso a Asistente IA">
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
-          <button type="button" class="btn btn-secondary" @click="showCreateModal = false">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar Dominio</button>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <button type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold transition-colors" @click="showCreateModal = false">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition-colors shadow-md shadow-indigo-600/20">
+            Guardar en SQLite
+          </button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal: EDITAR Dominio -->
-  <div class="modal-overlay" x-show="showEditModal" x-cloak style="display: none;" @keydown.escape.window="showEditModal = false">
-    <div class="modal-content" @click.outside="showEditModal = false">
-      <div class="modal-header">
-        <h3>✏️ Modificar Dominio #<span x-text="editID"></span></h3>
-        <button class="close-btn" @click="showEditModal = false">&times;</button>
+  <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+       x-show="showEditModal"
+       x-cloak
+       style="display: none;"
+       @keydown.escape.window="showEditModal = false">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5"
+         @click.outside="showEditModal = false">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+          <span>Modificar Dominio #<span x-text="editID"></span></span>
+        </h3>
+        <button type="button" class="text-slate-500 hover:text-slate-300 text-xl font-bold" @click="showEditModal = false">&times;</button>
       </div>
+
       <form :action="'/api/domains/' + editID"
             hx-put=""
             :hx-put="'/api/domains/' + editID"
             hx-target="#domains-table-body"
             hx-swap="outerHTML"
-            @htmx:after-request="showEditModal = false">
-        <div class="form-group">
-          <label>VPN de Salida:</label>
-          <select name="vpn_id" class="form-control" x-model="editVPNID" required>
+            @htmx:after-request="showEditModal = false"
+            class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">VPN Asociada:</label>
+          <select name="vpn_id" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none" x-model="editVPNID" required>
             {{range .Connections}}
               <option value="{{.ID}}">{{.Name}} ({{.Empresa}})</option>
             {{end}}
           </select>
         </div>
-        <div class="form-group">
-          <label>Dominio FQDN:</label>
-          <input type="text" name="domain" class="form-control" x-model="editDomain" required>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Dominio (FQDN):</label>
+          <input type="text" name="domain" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none font-mono" x-model="editDomain" required>
         </div>
-        <div class="form-group">
-          <label>Descripción:</label>
-          <input type="text" name="description" class="form-control" x-model="editDescription">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Descripción:</label>
+          <input type="text" name="description" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none" x-model="editDescription">
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
-          <button type="button" class="btn btn-secondary" @click="showEditModal = false">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Actualizar Cambios</button>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <button type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold transition-colors" @click="showEditModal = false">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition-colors shadow-md shadow-indigo-600/20">
+            Actualizar Cambios
+          </button>
         </div>
       </form>
     </div>

@@ -298,7 +298,7 @@ func (s *Server) handleRoutesCollection(w http.ResponseWriter, r *http.Request) 
 
 		routes, _ := s.store.GetRoutes(0, "")
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<tbody id="routes-table-body">`)
+		fmt.Fprint(w, `<tbody id="routes-table-body" class="divide-y divide-slate-800/40">`)
 		_ = s.templates["route_rows"].ExecuteTemplate(w, "route_rows", pageData{Routes: routes})
 		fmt.Fprint(w, `</tbody>`)
 	}
@@ -326,7 +326,7 @@ func (s *Server) handleRouteItem(w http.ResponseWriter, r *http.Request) {
 
 		routes, _ := s.store.GetRoutes(0, "")
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<tbody id="routes-table-body">`)
+		fmt.Fprint(w, `<tbody id="routes-table-body" class="divide-y divide-slate-800/40">`)
 		_ = s.templates["route_rows"].ExecuteTemplate(w, "route_rows", pageData{Routes: routes})
 		fmt.Fprint(w, `</tbody>`)
 
@@ -361,7 +361,7 @@ func (s *Server) handleDomainsCollection(w http.ResponseWriter, r *http.Request)
 
 		domains, _ := s.store.GetDomains(0, "")
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<tbody id="domains-table-body">`)
+		fmt.Fprint(w, `<tbody id="domains-table-body" class="divide-y divide-slate-800/40">`)
 		_ = s.templates["domain_rows"].ExecuteTemplate(w, "domain_rows", pageData{Domains: domains})
 		fmt.Fprint(w, `</tbody>`)
 	}
@@ -389,7 +389,7 @@ func (s *Server) handleDomainItem(w http.ResponseWriter, r *http.Request) {
 
 		domains, _ := s.store.GetDomains(0, "")
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<tbody id="domains-table-body">`)
+		fmt.Fprint(w, `<tbody id="domains-table-body" class="divide-y divide-slate-800/40">`)
 		_ = s.templates["domain_rows"].ExecuteTemplate(w, "domain_rows", pageData{Domains: domains})
 		fmt.Fprint(w, `</tbody>`)
 
