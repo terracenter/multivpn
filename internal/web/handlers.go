@@ -538,3 +538,51 @@ func (s *Server) handleDomainItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Método no soportado", http.StatusMethodNotAllowed)
 	}
 }
+
+// handleSearchPage maneja la vista web completa de resultados de búsqueda (/search?q=...)
+func (s *Server) handleSearchPage(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	stats, _ := s.store.GetStats()
+
+	results, err := s.store.GlobalSearch(q)
+	if err != nil {
+		results = &models.SearchResults{Query: q}
+	}
+
+	// Actualizar estado en vivo de VPNs encontradas
+	for i := range results.Connections {
+		active, _ := s.netMgr.IsConnectionActive(results.Connections[i].Name)
+		results.Connections[i].IsActive = active
+	}
+
+	data := pageData{
+		Title:         "Búsqueda Global",
+		ActiveTab:     "search",
+		Version:       s.version,
+		DBPath:        s.cfg.DBPath,
+		Stats:         stats,
+		SearchResults: results,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = s.templates["search"].ExecuteTemplate(w, "layout", data)
+}
+
+// handleSearchQuick maneja la búsqueda reactiva en vivo para el modal flotante (Ctrl+K)
+func (s *Server) handleSearchQuick(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	if q == "" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, `<div class="py-6 text-center text-slate-500 text-xs">Escribe para buscar VPNs, rutas CIDR o dominios registrados...</div>`)
+		return
+	}
+
+	results, err := s.store.GlobalSearch(q)
+	if err != nil {
+		results = &models.SearchResults{Query: q}
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = s.templates["search_quick"].ExecuteTemplate(w, "search_quick", pageData{SearchResults: results})
+}
+

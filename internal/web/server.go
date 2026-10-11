@@ -87,6 +87,20 @@ func (s *Server) parseTemplates() error {
 	}
 	s.templates["domain_rows"] = tDomainRows
 
+	// Parsear Búsqueda Completa
+	tSearch, err := template.ParseFS(templateFS, "templates/layout.html", "templates/search.html")
+	if err != nil {
+		return err
+	}
+	s.templates["search"] = tSearch
+
+	// Parsear Búsqueda Rápida (Modal)
+	tSearchQuick, err := template.ParseFS(templateFS, "templates/search_quick.html")
+	if err != nil {
+		return err
+	}
+	s.templates["search_quick"] = tSearchQuick
+
 	return nil
 }
 
@@ -105,6 +119,10 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/", s.handleDashboard)
 	mux.HandleFunc("/routes", s.handleRoutes)
 	mux.HandleFunc("/domains", s.handleDomains)
+	mux.HandleFunc("/search", s.handleSearchPage)
+
+	// API Búsqueda
+	mux.HandleFunc("/api/search/quick", s.handleSearchQuick)
 
 	// API VPNs
 	mux.HandleFunc("/api/vpns/up", s.handleVPNUp)

@@ -13,7 +13,11 @@
   <!-- Alpine.js local para micro-interacciones -->
   <script defer src="/static/alpine.min.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+<body x-data="{ quickOpen: false }"
+      @keydown.window.ctrl.k.prevent="quickOpen = true; $nextTick(() => $refs.quickSearchInput?.focus())"
+      @keydown.window.meta.k.prevent="quickOpen = true; $nextTick(() => $refs.quickSearchInput?.focus())"
+      @keydown.escape.window="quickOpen = false"
+      class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
   <!-- Navbar Principal Sticky -->
   <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -62,6 +66,17 @@
 
       <!-- Acciones de Cabecera -->
       <div class="flex items-center gap-2">
+        <button type="button"
+                @click="quickOpen = true; $nextTick(() => $refs.quickSearchInput?.focus())"
+                class="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/80 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-2"
+                title="Búsqueda Rápida (Ctrl+K)">
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span class="hidden md:inline">Buscar...</span>
+          <kbd class="hidden sm:inline-block font-mono text-[10px] bg-slate-900 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded shadow-sm">Ctrl K</kbd>
+        </button>
+
         <button class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
                 hx-post="/api/vpns/scan"
                 hx-target="#dashboard-area"
@@ -105,6 +120,51 @@
       </div>
     </div>
   </footer>
+
+  <!-- Modal Flotante de Búsqueda Rápida (Ctrl+K) -->
+  <div x-show="quickOpen"
+       x-cloak
+       style="display: none;"
+       class="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+         @click="quickOpen = false"></div>
+
+    <!-- Modal Box -->
+    <div class="relative bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden z-10"
+         @click.outside="quickOpen = false">
+      <!-- Input de búsqueda -->
+      <div class="relative border-b border-slate-800">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <form action="/search" method="GET" class="m-0">
+          <input x-ref="quickSearchInput"
+                 type="text"
+                 name="q"
+                 autocomplete="off"
+                 placeholder="Buscar VPNs, IPs, subredes o dominios... (Enter para ver todos)"
+                 hx-get="/api/search/quick"
+                 hx-trigger="keyup changed delay:200ms"
+                 hx-target="#quick-search-results"
+                 hx-include="this"
+                 class="w-full bg-transparent text-slate-100 placeholder-slate-500 pl-11 pr-14 py-3.5 text-sm focus:outline-none border-0 ring-0">
+        </form>
+        <button type="button" @click="quickOpen = false" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300">
+          <kbd class="text-[10px] font-mono bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-slate-400">ESC</kbd>
+        </button>
+      </div>
+
+      <!-- Resultados dinámicos vía HTMX -->
+      <div id="quick-search-results" class="p-4">
+        <div class="py-6 text-center text-slate-500 text-xs">
+          Escribe para buscar VPNs, rutas CIDR o dominios registrados...
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
 {{end}}

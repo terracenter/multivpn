@@ -1,0 +1,193 @@
+{{define "content"}}
+<div class="space-y-6">
+  <!-- Encabezado de Búsqueda -->
+  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2.5">
+          <svg class="w-7 h-7 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span>Búsqueda Global</span>
+        </h1>
+        <p class="text-xs text-slate-400 mt-1">
+          Localiza perfiles VPN, subredes CIDR, IPs estáticas y dominios registrados en toda la base de datos.
+        </p>
+      </div>
+
+      <!-- Barra de Entrada Directa -->
+      <form action="/search" method="GET" class="flex items-center gap-2 w-full md:w-auto">
+        <div class="relative w-full md:w-80">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input type="text"
+                 name="q"
+                 value="{{.SearchResults.Query}}"
+                 placeholder="Buscar por IP, CIDR, dominio o VPN..."
+                 class="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+        </div>
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all shadow-md shadow-indigo-600/20 whitespace-nowrap">
+          Buscar
+        </button>
+      </form>
+    </div>
+
+    {{if .SearchResults.Query}}
+    <div class="mt-4 pt-4 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+      <span>
+        Mostrando resultados para: <strong class="text-white font-mono bg-slate-800/80 px-2 py-0.5 rounded">{{.SearchResults.Query}}</strong>
+      </span>
+      <span class="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full font-semibold">
+        {{.SearchResults.TotalCount}} coincidencias encontradas
+      </span>
+    </div>
+    {{end}}
+  </div>
+
+  {{if eq .SearchResults.TotalCount 0}}
+    <!-- Estado Vacío -->
+    <div class="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-12 text-center">
+      <div class="inline-flex p-4 rounded-2xl bg-slate-800/50 text-slate-500 mb-4">
+        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 class="text-base font-semibold text-slate-200">No se encontraron resultados</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
+        {{if .SearchResults.Query}}
+          No hay VPNs, rutas CIDR o dominios registrados que coincidan con "{{.SearchResults.Query}}". Prueba con otro término.
+        {{else}}
+          Introduce un término de búsqueda para localizar VPNs, subredes o dominios.
+        {{end}}
+      </p>
+    </div>
+  {{else}}
+
+    <!-- Sección 1: Perfiles VPN -->
+    {{if gt (len .SearchResults.Connections) 0}}
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+          </svg>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Perfiles VPN</h2>
+          <span class="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-semibold">{{len .SearchResults.Connections}}</span>
+        </div>
+        <a href="/" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Ir al Dashboard &rarr;</a>
+      </div>
+      <div class="divide-y divide-slate-800/40">
+        {{range .SearchResults.Connections}}
+        <div class="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-2.5 h-2.5 rounded-full {{if .IsActive}}bg-emerald-400 shadow-sm shadow-emerald-400/50{{else}}bg-slate-600{{end}}"></div>
+            <div>
+              <p class="text-sm font-semibold text-white">{{.Name}}</p>
+              <p class="text-[11px] text-slate-500 uppercase">{{.Type}} · UUID: {{.UUID}}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="/" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition-colors">
+              Ver en Dashboard
+            </a>
+          </div>
+        </div>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+
+    <!-- Sección 2: Subredes y Rutas CIDR -->
+    {{if gt (len .SearchResults.Routes) 0}}
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Subredes y Rutas CIDR</h2>
+          <span class="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full font-semibold">{{len .SearchResults.Routes}}</span>
+        </div>
+        <a href="/routes" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Ir a Rutas &rarr;</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/60 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+            <tr>
+              <th class="px-6 py-3 font-semibold">Subred CIDR</th>
+              <th class="px-6 py-3 font-semibold">VPN Asignada</th>
+              <th class="px-6 py-3 font-semibold">Descripción</th>
+              <th class="px-6 py-3 font-semibold text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/40">
+            {{range .SearchResults.Routes}}
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="px-6 py-3.5 font-mono text-indigo-300 font-medium">{{.Route}}</td>
+              <td class="px-6 py-3.5">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700/60">
+                  {{.VPNName}}
+                </span>
+              </td>
+              <td class="px-6 py-3.5 text-slate-400">{{if .Description}}{{.Description}}{{else}}<span class="text-slate-600 italic">Sin descripción</span>{{end}}</td>
+              <td class="px-6 py-3.5 text-right">
+                <a href="/routes" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Ver en Rutas</a>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {{end}}
+
+    <!-- Sección 3: Dominios Web -->
+    {{if gt (len .SearchResults.Domains) 0}}
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Dominios Web</h2>
+          <span class="bg-cyan-500/20 text-cyan-300 text-xs px-2 py-0.5 rounded-full font-semibold">{{len .SearchResults.Domains}}</span>
+        </div>
+        <a href="/domains" class="text-xs text-cyan-400 hover:text-cyan-300 font-medium">Ir a Dominios &rarr;</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/60 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+            <tr>
+              <th class="px-6 py-3 font-semibold">Dominio Web</th>
+              <th class="px-6 py-3 font-semibold">VPN Asignada</th>
+              <th class="px-6 py-3 font-semibold">Descripción</th>
+              <th class="px-6 py-3 font-semibold text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/40">
+            {{range .SearchResults.Domains}}
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="px-6 py-3.5 font-mono text-cyan-300 font-medium">{{.Domain}}</td>
+              <td class="px-6 py-3.5">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700/60">
+                  {{.VPNName}}
+                </span>
+              </td>
+              <td class="px-6 py-3.5 text-slate-400">{{if .Description}}{{.Description}}{{else}}<span class="text-slate-600 italic">Sin descripción</span>{{end}}</td>
+              <td class="px-6 py-3.5 text-right">
+                <a href="/domains" class="text-xs text-cyan-400 hover:text-cyan-300 font-medium">Ver en Dominios</a>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {{end}}
+
+  {{end}}
+</div>
+{{end}}

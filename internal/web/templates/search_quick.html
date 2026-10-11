@@ -1,0 +1,77 @@
+{{define "search_quick"}}
+<div class="space-y-4 max-h-96 overflow-y-auto pr-1">
+  {{if eq .SearchResults.TotalCount 0}}
+    <div class="py-8 text-center text-slate-500 text-xs">
+      No se encontraron VPNs, rutas o dominios que coincidan con "{{.SearchResults.Query}}".
+    </div>
+  {{else}}
+    <!-- VPNs -->
+    {{if gt (len .SearchResults.Connections) 0}}
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <span>Perfiles VPN</span>
+          <span class="bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded-full">{{len .SearchResults.Connections}}</span>
+        </p>
+        <div class="space-y-1">
+          {{range .SearchResults.Connections}}
+          <a href="/" class="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 text-xs transition-colors group">
+            <span class="font-medium text-slate-200 group-hover:text-white">{{.Name}}</span>
+            <span class="text-[10px] text-slate-500 uppercase">{{.Type}}</span>
+          </a>
+          {{end}}
+        </div>
+      </div>
+    {{end}}
+
+    <!-- Rutas -->
+    {{if gt (len .SearchResults.Routes) 0}}
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <span>Subredes / IPs</span>
+          <span class="bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded-full">{{len .SearchResults.Routes}}</span>
+        </p>
+        <div class="space-y-1">
+          {{range .SearchResults.Routes}}
+          <a href="/routes" class="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 text-xs transition-colors group">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-indigo-300 font-medium">{{.Route}}</span>
+              <span class="text-slate-500 text-[11px]">{{.Description}}</span>
+            </div>
+            <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">{{.VPNName}}</span>
+          </a>
+          {{end}}
+        </div>
+      </div>
+    {{end}}
+
+    <!-- Dominios -->
+    {{if gt (len .SearchResults.Domains) 0}}
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <span>Dominios Web</span>
+          <span class="bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded-full">{{len .SearchResults.Domains}}</span>
+        </p>
+        <div class="space-y-1">
+          {{range .SearchResults.Domains}}
+          <a href="/domains" class="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 text-xs transition-colors group">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-cyan-300 font-medium">{{.Domain}}</span>
+              <span class="text-slate-500 text-[11px]">{{.Description}}</span>
+            </div>
+            <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">{{.VPNName}}</span>
+          </a>
+          {{end}}
+        </div>
+      </div>
+    {{end}}
+
+    <!-- Botón ver todos -->
+    <div class="pt-2 border-t border-slate-800 text-center">
+      <a href="/search?q={{.SearchResults.Query}}" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1">
+        <span>Ver todos los {{.SearchResults.TotalCount}} resultados en página completa</span>
+        <span>&rarr;</span>
+      </a>
+    </div>
+  {{end}}
+</div>
+{{end}}
