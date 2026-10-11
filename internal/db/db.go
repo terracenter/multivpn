@@ -317,8 +317,8 @@ func (s *Storage) ReassignConnectionData(fromVPNID, toVPNID int64) error {
 	return nil
 }
 
-// GetRoutesFiltered retorna las rutas asociadas, con soporte opcional de filtro por vpn_id, ruta, descripción y búsqueda general
-func (s *Storage) GetRoutesFiltered(vpnID int64, routeFilter, descFilter, search string) ([]models.Route, error) {
+// GetRoutesFiltered retorna las rutas asociadas, con soporte opcional de filtro por vpn_id, ruta, descripción, búsqueda general y ordenamiento
+func (s *Storage) GetRoutesFiltered(vpnID int64, routeFilter, descFilter, search, sortBy, sortOrder string) ([]models.Route, error) {
 	query := `
 		SELECT r.id, r.vpn_id, c.name, r.route, COALESCE(r.description, '')
 		FROM vpn_routes r
@@ -349,7 +349,21 @@ func (s *Storage) GetRoutesFiltered(vpnID int64, routeFilter, descFilter, search
 		args = append(args, pattern, pattern, pattern)
 	}
 
-	query += " ORDER BY c.name ASC, r.route ASC"
+	orderDir := "ASC"
+	if strings.ToLower(sortOrder) == "desc" {
+		orderDir = "DESC"
+	}
+
+	switch strings.ToLower(sortBy) {
+	case "vpn":
+		query += fmt.Sprintf(" ORDER BY c.name %s, r.route ASC", orderDir)
+	case "route":
+		query += fmt.Sprintf(" ORDER BY r.route %s", orderDir)
+	case "description", "desc", "destino":
+		query += fmt.Sprintf(" ORDER BY r.description %s", orderDir)
+	default:
+		query += " ORDER BY c.name ASC, r.route ASC"
+	}
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
@@ -370,7 +384,7 @@ func (s *Storage) GetRoutesFiltered(vpnID int64, routeFilter, descFilter, search
 
 // GetRoutes retorna las rutas asociadas, con soporte opcional de filtro por vpn_id y búsqueda textual
 func (s *Storage) GetRoutes(vpnID int64, search string) ([]models.Route, error) {
-	return s.GetRoutesFiltered(vpnID, "", "", search)
+	return s.GetRoutesFiltered(vpnID, "", "", search, "", "")
 }
 
 // GetRoute obtiene una ruta específica por ID
@@ -417,8 +431,8 @@ func (s *Storage) DeleteRoute(id int64) error {
 	return err
 }
 
-// GetDomainsFiltered retorna los dominios registrados con filtros específicos por columna y/o búsqueda general
-func (s *Storage) GetDomainsFiltered(vpnID int64, domainFilter, descFilter, search string) ([]models.Domain, error) {
+// GetDomainsFiltered retorna los dominios registrados con filtros específicos por columna, búsqueda general y ordenamiento
+func (s *Storage) GetDomainsFiltered(vpnID int64, domainFilter, descFilter, search, sortBy, sortOrder string) ([]models.Domain, error) {
 	query := `
 		SELECT d.id, d.vpn_id, c.name, d.domain, COALESCE(d.description, '')
 		FROM vpn_domains d
@@ -449,7 +463,21 @@ func (s *Storage) GetDomainsFiltered(vpnID int64, domainFilter, descFilter, sear
 		args = append(args, pattern, pattern, pattern)
 	}
 
-	query += " ORDER BY c.name ASC, d.domain ASC"
+	orderDir := "ASC"
+	if strings.ToLower(sortOrder) == "desc" {
+		orderDir = "DESC"
+	}
+
+	switch strings.ToLower(sortBy) {
+	case "vpn":
+		query += fmt.Sprintf(" ORDER BY c.name %s, d.domain ASC", orderDir)
+	case "domain", "fqdn":
+		query += fmt.Sprintf(" ORDER BY d.domain %s", orderDir)
+	case "description", "desc", "servicio":
+		query += fmt.Sprintf(" ORDER BY d.description %s", orderDir)
+	default:
+		query += " ORDER BY c.name ASC, d.domain ASC"
+	}
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
@@ -470,7 +498,7 @@ func (s *Storage) GetDomainsFiltered(vpnID int64, domainFilter, descFilter, sear
 
 // GetDomains retorna los dominios registrados
 func (s *Storage) GetDomains(vpnID int64, search string) ([]models.Domain, error) {
-	return s.GetDomainsFiltered(vpnID, "", "", search)
+	return s.GetDomainsFiltered(vpnID, "", "", search, "", "")
 }
 
 // GetDomain obtiene un dominio por ID

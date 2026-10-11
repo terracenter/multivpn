@@ -5,22 +5,37 @@
   selectedVPN: 0,
   filterRoute: '',
   filterDesc: '',
+  sortBy: 'vpn',
+  sortOrder: 'asc',
   editID: 0,
   editVPNID: 1,
   editRoute: '',
   editDescription: '',
+  toggleSort(col) {
+    if (this.sortBy === col) {
+      this.sortOrder = (this.sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortBy = col;
+      this.sortOrder = 'asc';
+    }
+    this.fetchFilteredRoutes();
+  },
   fetchFilteredRoutes() {
     const p = new URLSearchParams();
     p.set('vpn_id', this.selectedVPN);
     if (this.filterRoute) p.set('route', this.filterRoute);
     if (this.filterDesc) p.set('description', this.filterDesc);
+    p.set('sort_by', this.sortBy);
+    p.set('sort_order', this.sortOrder);
     htmx.ajax('GET', '/api/routes/search?' + p.toString(), '#routes-table-body');
   },
   resetFilters() {
     this.selectedVPN = 0;
     this.filterRoute = '';
     this.filterDesc = '';
-    htmx.ajax('GET', '/api/routes/search?vpn_id=0', '#routes-table-body');
+    this.sortBy = 'vpn';
+    this.sortOrder = 'asc';
+    htmx.ajax('GET', '/api/routes/search?vpn_id=0&sort_by=vpn&sort_order=asc', '#routes-table-body');
   },
   openEditModal(id, vpnID, route, desc) {
     this.editID = id;
@@ -59,55 +74,54 @@
     </button>
   </div>
 
-  <!-- Barra de Filtros por VPN (Pills Ergonómicos) -->
-  <div class="flex flex-wrap items-center gap-2">
-    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">Filtrar por VPN:</span>
-    <button type="button"
-            @click="selectedVPN = 0; fetchFilteredRoutes()"
-            :class="selectedVPN === 0 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'"
-            class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer">
-      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-      </svg>
-      <span>Todas las VPNs</span>
-      <span class="text-[10px] px-1.5 py-0.5 rounded-full" :class="selectedVPN === 0 ? 'bg-indigo-500/40 text-white' : 'bg-slate-800 text-slate-400'">{{.Stats.TotalRoutes}}</span>
-    </button>
-
-    <button type="button"
-            @click="selectedVPN = -1; fetchFilteredRoutes()"
-            :class="selectedVPN === -1 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'"
-            class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer">
-      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-      <span>Deseleccionar Todo</span>
-    </button>
-
-    <span class="text-slate-700 mx-1">|</span>
-
-    {{range .VPNFilters}}
-    <button type="button"
-            @click="selectedVPN = (selectedVPN === {{.ID}} ? 0 : {{.ID}}); fetchFilteredRoutes()"
-            :class="selectedVPN === {{.ID}} ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'"
-            class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer">
-      <span class="w-1.5 h-1.5 rounded-full" :class="selectedVPN === {{.ID}} ? 'bg-white' : 'bg-indigo-400'"></span>
-      <span>{{.Name}}</span>
-      <span class="text-[10px] px-1.5 py-0.5 rounded-full" :class="selectedVPN === {{.ID}} ? 'bg-indigo-500/40 text-white' : 'bg-slate-800 text-slate-400'">{{.Count}}</span>
-    </button>
-    {{end}}
-  </div>
-
-  <!-- Tabla de Datos Profesional con Filtros por Columna Integrados -->
+  <!-- Tabla de Datos Profesional con Filtros y Ordenamiento Integrados -->
   <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full border-collapse text-left">
         <thead>
-          <!-- Fila de Encabezados -->
-          <tr class="bg-slate-950/80 text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-800">
-            <th class="py-3.5 px-4 w-52">VPN</th>
-            <th class="py-3.5 px-4 w-64">Red / Máscara CIDR</th>
-            <th class="py-3.5 px-4">Descripción / Destino</th>
-            <th class="py-3.5 px-4 text-right w-36">Acciones</th>
+          <!-- Fila de Encabezados con Ordenamiento (Sortable) -->
+          <tr class="bg-slate-950/80 text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-800 select-none">
+            <!-- Columna 1: VPN -->
+            <th class="py-3 px-4 w-52">
+              <button type="button"
+                      @click="toggleSort('vpn')"
+                      class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group">
+                <span>VPN</span>
+                <span class="text-[11px] text-slate-500 group-hover:text-slate-300">
+                  <span x-show="sortBy === 'vpn' && sortOrder === 'asc'" class="text-indigo-400 font-bold">▲</span>
+                  <span x-show="sortBy === 'vpn' && sortOrder === 'desc'" class="text-indigo-400 font-bold">▼</span>
+                  <span x-show="sortBy !== 'vpn'" class="text-slate-600 group-hover:text-slate-400">⇅</span>
+                </span>
+              </button>
+            </th>
+            <!-- Columna 2: Red / Máscara CIDR -->
+            <th class="py-3 px-4 w-64">
+              <button type="button"
+                      @click="toggleSort('route')"
+                      class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group">
+                <span>Red / Máscara CIDR</span>
+                <span class="text-[11px] text-slate-500 group-hover:text-slate-300">
+                  <span x-show="sortBy === 'route' && sortOrder === 'asc'" class="text-indigo-400 font-bold">▲</span>
+                  <span x-show="sortBy === 'route' && sortOrder === 'desc'" class="text-indigo-400 font-bold">▼</span>
+                  <span x-show="sortBy !== 'route'" class="text-slate-600 group-hover:text-slate-400">⇅</span>
+                </span>
+              </button>
+            </th>
+            <!-- Columna 3: Descripción / Destino -->
+            <th class="py-3 px-4">
+              <button type="button"
+                      @click="toggleSort('description')"
+                      class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group">
+                <span>Descripción / Destino</span>
+                <span class="text-[11px] text-slate-500 group-hover:text-slate-300">
+                  <span x-show="sortBy === 'description' && sortOrder === 'asc'" class="text-indigo-400 font-bold">▲</span>
+                  <span x-show="sortBy === 'description' && sortOrder === 'desc'" class="text-indigo-400 font-bold">▼</span>
+                  <span x-show="sortBy !== 'description'" class="text-slate-600 group-hover:text-slate-400">⇅</span>
+                </span>
+              </button>
+            </th>
+            <!-- Columna 4: Acciones -->
+            <th class="py-3 px-4 text-right w-36">Acciones</th>
           </tr>
           <!-- Fila de Filtros por Columna -->
           <tr class="bg-slate-950/40 border-b border-slate-800 text-xs">

@@ -420,7 +420,10 @@ func (s *Server) handleRoutesSearch(w http.ResponseWriter, r *http.Request) {
 		descFilter = r.URL.Query().Get("desc")
 	}
 	vpnID, _ := strconv.ParseInt(r.URL.Query().Get("vpn_id"), 10, 64)
-	routes, _ := s.store.GetRoutesFiltered(vpnID, routeFilter, descFilter, query)
+	sortBy := r.URL.Query().Get("sort_by")
+	sortOrder := r.URL.Query().Get("sort_order")
+
+	routes, _ := s.store.GetRoutesFiltered(vpnID, routeFilter, descFilter, query, sortBy, sortOrder)
 	data := pageData{Routes: routes}
 	_ = s.templates["route_rows"].ExecuteTemplate(w, "route_rows", data)
 }
@@ -489,7 +492,10 @@ func (s *Server) handleDomainsSearch(w http.ResponseWriter, r *http.Request) {
 		descFilter = r.URL.Query().Get("desc")
 	}
 	vpnID, _ := strconv.ParseInt(r.URL.Query().Get("vpn_id"), 10, 64)
-	domains, _ := s.store.GetDomainsFiltered(vpnID, domainFilter, descFilter, query)
+	sortBy := r.URL.Query().Get("sort_by")
+	sortOrder := r.URL.Query().Get("sort_order")
+
+	domains, _ := s.store.GetDomainsFiltered(vpnID, domainFilter, descFilter, query, sortBy, sortOrder)
 	data := pageData{Domains: domains}
 	_ = s.templates["domain_rows"].ExecuteTemplate(w, "domain_rows", data)
 }

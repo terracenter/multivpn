@@ -124,5 +124,21 @@ func TestSearchEndpoints(t *testing.T) {
 	if rrDomainFilter.Code != http.StatusOK {
 		t.Errorf("Código de estado esperado 200 para /api/domains/search, se obtuvo %d", rrDomainFilter.Code)
 	}
+
+	// Test GET /api/routes/search con ordenamiento por route DESC
+	reqRouteSort, _ := http.NewRequest(http.MethodGet, "/api/routes/search?sort_by=route&sort_order=desc", nil)
+	rrRouteSort := httptest.NewRecorder()
+	server.handleRoutesSearch(rrRouteSort, reqRouteSort)
+	if rrRouteSort.Code != http.StatusOK {
+		t.Errorf("Código de estado esperado 200 para /api/routes/search con ordenamiento, se obtuvo %d", rrRouteSort.Code)
+	}
+
+	// Test GET /api/domains/search con ordenamiento por domain ASC
+	reqDomainSort, _ := http.NewRequest(http.MethodGet, "/api/domains/search?sort_by=domain&sort_order=asc", nil)
+	rrDomainSort := httptest.NewRecorder()
+	server.handleDomainsSearch(rrDomainSort, reqDomainSort)
+	if rrDomainSort.Code != http.StatusOK {
+		t.Errorf("Código de estado esperado 200 para /api/domains/search con ordenamiento, se obtuvo %d", rrDomainSort.Code)
+	}
 }
 
