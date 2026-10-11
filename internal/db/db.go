@@ -180,9 +180,14 @@ func (s *Storage) DumpSQL() error {
 	return os.WriteFile(s.dumpPath, []byte(sb.String()), 0644)
 }
 
-// GetConnections retorna todas las VPNs registradas
+// GetConnections retorna todas las VPNs registradas con conteo de rutas y dominios asociados
 func (s *Storage) GetConnections() ([]models.Connection, error) {
-	rows, err := s.db.Query("SELECT id, name, type, COALESCE(empresa, ''), is_salida FROM vpn_connections ORDER BY is_salida ASC, name ASC")
+	rows, err := s.db.Query(`
+		SELECT c.id, c.name, c.type, COALESCE(c.empresa, ''), c.is_salida,
+		       (SELECT COUNT(*) FROM vpn_routes WHERE vpn_id = c.id),
+		       (SELECT COUNT(*) FROM vpn_domains WHERE vpn_id = c.id)
+		FROM vpn_connections c
+		ORDER BY c.is_salida ASC, c.name ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +197,7 @@ func (s *Storage) GetConnections() ([]models.Connection, error) {
 	for rows.Next() {
 		var c models.Connection
 		var isSalida int
-		if err := rows.Scan(&c.ID, &c.Name, &c.Type, &c.Empresa, &isSalida); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Type, &c.Empresa, &isSalida, &c.RouteCount, &c.DomainCount); err != nil {
 			return nil, err
 		}
 		c.IsSalida = isSalida == 1
@@ -324,6 +329,8 @@ func (s *Storage) GetRoutes(vpnID int64, search string) ([]models.Route, error) 
 	if vpnID > 0 {
 		query += " AND r.vpn_id = ?"
 		args = append(args, vpnID)
+	} else if vpnID < 0 {
+		query += " AND 1 = 0"
 	}
 
 	if search != "" {
@@ -407,6 +414,8 @@ func (s *Storage) GetDomains(vpnID int64, search string) ([]models.Domain, error
 	if vpnID > 0 {
 		query += " AND d.vpn_id = ?"
 		args = append(args, vpnID)
+	} else if vpnID < 0 {
+		query += " AND 1 = 0"
 	}
 
 	if search != "" {

@@ -114,6 +114,9 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/vpns/up-all", s.handleVPNUpAll)
 	mux.HandleFunc("/api/vpns/down-all", s.handleVPNDownAll)
 	mux.HandleFunc("/api/vpns/scan", s.handleVPNScan)
+	mux.HandleFunc("/api/vpns/reassign", s.handleVPNReassign)
+	mux.HandleFunc("/api/vpns/delete", s.handleVPNDelete)
+	mux.HandleFunc("/api/vpns/", s.handleVPNItem)
 
 	// API Rutas
 	mux.HandleFunc("/api/routes", s.handleRoutesCollection)

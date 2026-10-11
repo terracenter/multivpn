@@ -9,6 +9,8 @@ type Connection struct {
 	IsSalida           bool   `json:"is_salida"` // 1 si es salida de sitios bloqueados
 	IsActive           bool   `json:"is_active"` // Estado en tiempo real
 	HasDefaultGateway  bool   `json:"has_default_gateway"` // true si tiene riesgo de fuga (never-default=no)
+	RouteCount         int    `json:"route_count"`
+	DomainCount        int    `json:"domain_count"`
 }
 
 // Route representa una ruta estática (IP/CIDR) asociada a una VPN

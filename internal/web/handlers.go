@@ -286,6 +286,111 @@ func (s *Server) handleVPNScan(w http.ResponseWriter, r *http.Request) {
 	s.renderDashboardFragment(w)
 }
 
+// handleVPNDelete elimina una VPN directamente (y opcionalmente en NetworkManager)
+func (s *Server) handleVPNDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	_ = r.ParseForm()
+	idStr := r.FormValue("id")
+	if idStr == "" {
+		idStr = r.URL.Query().Get("id")
+	}
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		http.Error(w, "ID de VPN no válido", http.StatusBadRequest)
+		return
+	}
+
+	deleteNM := r.FormValue("delete_nm") == "true" || r.URL.Query().Get("delete_nm") == "true"
+
+	conns, _ := s.store.GetConnections()
+	var connName string
+	for _, c := range conns {
+		if c.ID == id {
+			connName = c.Name
+			break
+		}
+	}
+
+	_ = s.store.DeleteConnection(id)
+
+	if deleteNM && connName != "" {
+		_ = s.netMgr.DeleteConnectionProfile(connName)
+	}
+
+	s.renderDashboardFragment(w)
+}
+
+// handleVPNReassign reasigna rutas y dominios de una VPN a otra y luego elimina la VPN de origen
+func (s *Server) handleVPNReassign(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	_ = r.ParseForm()
+	fromID, _ := strconv.ParseInt(r.FormValue("from_id"), 10, 64)
+	toID, _ := strconv.ParseInt(r.FormValue("to_id"), 10, 64)
+	deleteNM := r.FormValue("delete_nm") == "true"
+
+	if fromID <= 0 || toID <= 0 {
+		http.Error(w, "IDs de VPN no válidos", http.StatusBadRequest)
+		return
+	}
+
+	conns, _ := s.store.GetConnections()
+	var connName string
+	for _, c := range conns {
+		if c.ID == fromID {
+			connName = c.Name
+			break
+		}
+	}
+
+	if err := s.store.ReassignConnectionData(fromID, toID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if deleteNM && connName != "" {
+		_ = s.netMgr.DeleteConnectionProfile(connName)
+	}
+
+	s.renderDashboardFragment(w)
+}
+
+// handleVPNItem maneja operaciones sobre /api/vpns/{id}
+func (s *Server) handleVPNItem(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/vpns/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		http.Error(w, "ID no válido", http.StatusBadRequest)
+		return
+	}
+
+	if r.Method == http.MethodDelete {
+		deleteNM := r.URL.Query().Get("delete_nm") == "true"
+		conns, _ := s.store.GetConnections()
+		var connName string
+		for _, c := range conns {
+			if c.ID == id {
+				connName = c.Name
+				break
+			}
+		}
+
+		_ = s.store.DeleteConnection(id)
+		if deleteNM && connName != "" {
+			_ = s.netMgr.DeleteConnectionProfile(connName)
+		}
+		s.renderDashboardFragment(w)
+		return
+	}
+
+	http.Error(w, "Método no soportado", http.StatusMethodNotAllowed)
+}
+
 func (s *Server) renderDashboardFragment(w http.ResponseWriter) {
 	conns, _ := s.store.GetConnections()
 	stats, _ := s.store.GetStats()
