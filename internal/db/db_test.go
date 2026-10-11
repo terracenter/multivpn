@@ -87,3 +87,71 @@ func TestStorageImportAndCRUD(t *testing.T) {
 		t.Fatalf("Error eliminando ruta: %v", err)
 	}
 }
+
+func TestReassignConnectionDataAndDeduplication(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "multivpn_test_reassign_*")
+	if err != nil {
+		t.Fatalf("Error creando temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	dbPath := filepath.Join(tempDir, "test.db")
+	dumpCopy := filepath.Join(tempDir, "test_dump.sql")
+
+	origDump := filepath.Join("..", "..", "data", "vpn_data_dump.sql")
+	content, _ := os.ReadFile(origDump)
+	_ = os.WriteFile(dumpCopy, content, 0644)
+
+	store, err := NewStorage(dbPath, dumpCopy)
+	if err != nil {
+		t.Fatalf("Error creando storage: %v", err)
+	}
+	defer store.Close()
+
+	// Crear dos VPNs temporales
+	vpn1ID, _ := store.UpsertConnection("TestVPN1", "vpn", "test", false)
+	vpn2ID, _ := store.UpsertConnection("TestVPN2", "vpn", "test", true)
+
+	// Agregar rutas a VPN1
+	_ = store.AddRoute(vpn1ID, "10.1.1.0/24", "Ruta A")
+	_ = store.AddRoute(vpn1ID, "10.2.2.0/24", "Ruta Duplicada Compartida")
+	_ = store.AddDomain(vpn1ID, "example.com", "Dominio A")
+
+	// Agregar a VPN2 la misma ruta para probar deduplicación
+	_ = store.AddRoute(vpn2ID, "10.2.2.0/24", "Ruta ya existente en destino")
+
+	// Reasignar VPN1 a VPN2
+	err = store.ReassignConnectionData(vpn1ID, vpn2ID)
+	if err != nil {
+		t.Fatalf("Error reasignando datos: %v", err)
+	}
+
+	// Verificar que VPN1 fue eliminada
+	conns, _ := store.GetConnections()
+	for _, c := range conns {
+		if c.ID == vpn1ID {
+			t.Errorf("VPN1 no debería existir tras reasignación")
+		}
+	}
+
+	// Verificar que VPN2 tiene las rutas sin duplicados
+	routes2, _ := store.GetRoutes(vpn2ID, "")
+	countMap := make(map[string]int)
+	for _, r := range routes2 {
+		countMap[r.Route]++
+		if countMap[r.Route] > 1 {
+			t.Errorf("Ruta duplicada detectada en destino: %s", r.Route)
+		}
+	}
+
+	// Probar GlobalSearch
+	results, err := store.GlobalSearch("10.1.1.0")
+	if err != nil || len(results.Routes) == 0 {
+		t.Errorf("GlobalSearch no encontró la ruta 10.1.1.0: %v", err)
+	}
+
+	resDomain, err := store.GlobalSearch("example.com")
+	if err != nil || len(resDomain.Domains) == 0 {
+		t.Errorf("GlobalSearch no encontró el dominio example.com: %v", err)
+	}
+}

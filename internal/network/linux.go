@@ -153,6 +153,12 @@ func (m *LinuxManager) Down(connName string) error {
 	return nil
 }
 
+// DeleteConnectionProfile elimina el perfil en NetworkManager
+func (m *LinuxManager) DeleteConnectionProfile(connName string) error {
+	cmd := exec.Command("nmcli", "connection", "delete", connName)
+	return cmd.Run()
+}
+
 // getActiveConnectionsMap obtiene un mapa de nombres de conexiones activas
 func (m *LinuxManager) getActiveConnectionsMap() (map[string]bool, error) {
 	cmd := exec.Command("nmcli", "-t", "-f", "NAME,STATE", "connection", "show", "--active")

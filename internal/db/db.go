@@ -236,13 +236,80 @@ func (s *Storage) UpsertConnection(name, connType, empresa string, isSalida bool
 	return res.LastInsertId()
 }
 
-// DeleteConnection elimina una conexión VPN y sus rutas en cascada
+// DeleteConnection elimina una conexión VPN y sus rutas y dominios en cascada
 func (s *Storage) DeleteConnection(id int64) error {
-	_, err := s.db.Exec("DELETE FROM vpn_connections WHERE id = ?", id)
-	if err == nil {
-		_ = s.DumpSQL()
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
 	}
-	return err
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("DELETE FROM vpn_routes WHERE vpn_id = ?", id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM vpn_domains WHERE vpn_id = ?", id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM vpn_connections WHERE id = ?", id); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	_ = s.DumpSQL()
+	return nil
+}
+
+// ReassignConnectionData reasigna todas las rutas y dominios de fromVPNID a toVPNID con deduplicación estricta y elimina fromVPNID
+func (s *Storage) ReassignConnectionData(fromVPNID, toVPNID int64) error {
+	if fromVPNID == toVPNID {
+		return fmt.Errorf("la VPN de origen y destino no pueden ser la misma")
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Reasignar rutas aplicando deduplicación (INSERT OR IGNORE)
+	_, err = tx.Exec(`
+		INSERT OR IGNORE INTO vpn_routes (vpn_id, route, description)
+		SELECT ?, route, description FROM vpn_routes WHERE vpn_id = ?`, toVPNID, fromVPNID)
+	if err != nil {
+		return fmt.Errorf("error reasignando rutas: %w", err)
+	}
+
+	// Borrar las rutas originales de la VPN de origen
+	if _, err = tx.Exec("DELETE FROM vpn_routes WHERE vpn_id = ?", fromVPNID); err != nil {
+		return err
+	}
+
+	// 2. Reasignar dominios aplicando deduplicación (INSERT OR IGNORE)
+	_, err = tx.Exec(`
+		INSERT OR IGNORE INTO vpn_domains (vpn_id, domain, description)
+		SELECT ?, domain, description FROM vpn_domains WHERE vpn_id = ?`, toVPNID, fromVPNID)
+	if err != nil {
+		return fmt.Errorf("error reasignando dominios: %w", err)
+	}
+
+	// Borrar los dominios originales de la VPN de origen
+	if _, err = tx.Exec("DELETE FROM vpn_domains WHERE vpn_id = ?", fromVPNID); err != nil {
+		return err
+	}
+
+	// 3. Eliminar la VPN de origen
+	if _, err = tx.Exec("DELETE FROM vpn_connections WHERE id = ?", fromVPNID); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	_ = s.DumpSQL()
+	return nil
 }
 
 // GetRoutes retorna las rutas asociadas, con soporte opcional de filtro por vpn_id y búsqueda textual
@@ -409,6 +476,78 @@ func (s *Storage) DeleteDomain(id int64) error {
 		_ = s.DumpSQL()
 	}
 	return err
+}
+
+// GlobalSearch realiza una búsqueda unificada por nombre de VPN, empresa, IP/red CIDR y dominios
+func (s *Storage) GlobalSearch(query string) (*models.SearchResults, error) {
+	query = strings.TrimSpace(query)
+	results := &models.SearchResults{
+		Query:       query,
+		Connections: []models.Connection{},
+		Routes:      []models.Route{},
+		Domains:     []models.Domain{},
+	}
+
+	if query == "" {
+		return results, nil
+	}
+
+	pattern := "%" + query + "%"
+
+	// 1. Buscar en conexiones
+	cRows, err := s.db.Query(`
+		SELECT id, name, type, COALESCE(empresa, ''), is_salida
+		FROM vpn_connections
+		WHERE name LIKE ? OR empresa LIKE ?
+		ORDER BY name ASC`, pattern, pattern)
+	if err == nil {
+		defer cRows.Close()
+		for cRows.Next() {
+			var c models.Connection
+			var isSalida int
+			if err := cRows.Scan(&c.ID, &c.Name, &c.Type, &c.Empresa, &isSalida); err == nil {
+				c.IsSalida = isSalida == 1
+				results.Connections = append(results.Connections, c)
+			}
+		}
+	}
+
+	// 2. Buscar en rutas
+	rRows, err := s.db.Query(`
+		SELECT r.id, r.vpn_id, c.name, r.route, COALESCE(r.description, '')
+		FROM vpn_routes r
+		JOIN vpn_connections c ON r.vpn_id = c.id
+		WHERE r.route LIKE ? OR r.description LIKE ? OR c.name LIKE ?
+		ORDER BY c.name ASC, r.route ASC`, pattern, pattern, pattern)
+	if err == nil {
+		defer rRows.Close()
+		for rRows.Next() {
+			var r models.Route
+			if err := rRows.Scan(&r.ID, &r.VPNID, &r.VPNName, &r.Route, &r.Description); err == nil {
+				results.Routes = append(results.Routes, r)
+			}
+		}
+	}
+
+	// 3. Buscar en dominios
+	dRows, err := s.db.Query(`
+		SELECT d.id, d.vpn_id, c.name, d.domain, COALESCE(d.description, '')
+		FROM vpn_domains d
+		JOIN vpn_connections c ON d.vpn_id = c.id
+		WHERE d.domain LIKE ? OR d.description LIKE ? OR c.name LIKE ?
+		ORDER BY c.name ASC, d.domain ASC`, pattern, pattern, pattern)
+	if err == nil {
+		defer dRows.Close()
+		for dRows.Next() {
+			var d models.Domain
+			if err := dRows.Scan(&d.ID, &d.VPNID, &d.VPNName, &d.Domain, &d.Description); err == nil {
+				results.Domains = append(results.Domains, d)
+			}
+		}
+	}
+
+	results.TotalCount = len(results.Connections) + len(results.Routes) + len(results.Domains)
+	return results, nil
 }
 
 // GetStats calcula las métricas globales para el Dashboard

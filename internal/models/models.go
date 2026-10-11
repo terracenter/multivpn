@@ -37,3 +37,12 @@ type Stats struct {
 	TotalDomains int `json:"total_domains"`
 	ShieldedVPNs int `json:"shielded_vpns"`
 }
+
+// SearchResults contiene los resultados consolidados de una búsqueda global
+type SearchResults struct {
+	Query       string       `json:"query"`
+	Connections []Connection `json:"connections"`
+	Routes      []Route      `json:"routes"`
+	Domains     []Domain     `json:"domains"`
+	TotalCount  int          `json:"total_count"`
+}

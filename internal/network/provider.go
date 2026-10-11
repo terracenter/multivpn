@@ -21,4 +21,7 @@ type VPNProvider interface {
 
 	// Down desconecta el túnel especificado
 	Down(connName string) error
+
+	// DeleteConnectionProfile elimina el perfil de conexión del gestor del sistema (ej: nmcli)
+	DeleteConnectionProfile(connName string) error
 }
