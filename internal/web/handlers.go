@@ -11,15 +11,23 @@ import (
 	"github.com/terracenter/multivpn/internal/network"
 )
 
+type VPNFilter struct {
+	ID    int64
+	Name  string
+	Count int
+}
+
 type pageData struct {
-	Title       string
-	ActiveTab   string
-	Version     string
-	DBPath      string
-	Stats       *models.Stats
-	Connections []models.Connection
-	Routes      []models.Route
-	Domains     []models.Domain
+	Title         string
+	ActiveTab     string
+	Version       string
+	DBPath        string
+	Stats         *models.Stats
+	Connections   []models.Connection
+	Routes        []models.Route
+	Domains       []models.Domain
+	VPNFilters    []VPNFilter
+	SearchResults *models.SearchResults
 }
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +67,16 @@ func (s *Server) handleRoutes(w http.ResponseWriter, r *http.Request) {
 	conns, _ := s.store.GetConnections()
 	stats, _ := s.store.GetStats()
 
+	var filters []VPNFilter
+	for _, c := range conns {
+		cRoutes, _ := s.store.GetRoutes(c.ID, "")
+		filters = append(filters, VPNFilter{
+			ID:    c.ID,
+			Name:  c.Name,
+			Count: len(cRoutes),
+		})
+	}
+
 	data := pageData{
 		Title:       "Rutas e IPs",
 		ActiveTab:   "routes",
@@ -67,6 +85,7 @@ func (s *Server) handleRoutes(w http.ResponseWriter, r *http.Request) {
 		Stats:       stats,
 		Connections: conns,
 		Routes:      routes,
+		VPNFilters:  filters,
 	}
 
 	_ = s.templates["routes"].ExecuteTemplate(w, "layout", data)
@@ -77,6 +96,16 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 	conns, _ := s.store.GetConnections()
 	stats, _ := s.store.GetStats()
 
+	var filters []VPNFilter
+	for _, c := range conns {
+		cDomains, _ := s.store.GetDomains(c.ID, "")
+		filters = append(filters, VPNFilter{
+			ID:    c.ID,
+			Name:  c.Name,
+			Count: len(cDomains),
+		})
+	}
+
 	data := pageData{
 		Title:       "Dominios",
 		ActiveTab:   "domains",
@@ -85,6 +114,7 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 		Stats:       stats,
 		Connections: conns,
 		Domains:     domains,
+		VPNFilters:  filters,
 	}
 
 	_ = s.templates["domains"].ExecuteTemplate(w, "layout", data)
@@ -279,7 +309,8 @@ func (s *Server) renderDashboardFragment(w http.ResponseWriter) {
 // handleRoutesSearch responde con filas filtradas para HTMX
 func (s *Server) handleRoutesSearch(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
-	routes, _ := s.store.GetRoutes(0, query)
+	vpnID, _ := strconv.ParseInt(r.URL.Query().Get("vpn_id"), 10, 64)
+	routes, _ := s.store.GetRoutes(vpnID, query)
 	data := pageData{Routes: routes}
 	_ = s.templates["route_rows"].ExecuteTemplate(w, "route_rows", data)
 }
@@ -342,7 +373,8 @@ func (s *Server) handleRouteItem(w http.ResponseWriter, r *http.Request) {
 // handleDomainsSearch responde con filas filtradas para HTMX
 func (s *Server) handleDomainsSearch(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
-	domains, _ := s.store.GetDomains(0, query)
+	vpnID, _ := strconv.ParseInt(r.URL.Query().Get("vpn_id"), 10, 64)
+	domains, _ := s.store.GetDomains(vpnID, query)
 	data := pageData{Domains: domains}
 	_ = s.templates["domain_rows"].ExecuteTemplate(w, "domain_rows", data)
 }
