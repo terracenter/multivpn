@@ -17,15 +17,23 @@ Desarrollado en **Go** como un binario estático único, sin dependencias extern
 - **🌐 WebUI Local Amigable (HTMX + Alpine.js):** Ejecuta `./multivpn web` y se abrirá automáticamente tu navegador con un panel visual interactivo:
   - Tarjetas de conexión con estado en tiempo real (🟢 Activa / ⚪ Inactiva).
   - Selector individual y en lote ("Conectar Todas" / "Desconectar Todas").
-- **⚡ Gestor de Rutas e IPs con Edición en Vivo:**
-  - Tabla navegable con buscador instantáneo en caliente.
-  - Formulario modal para **editar y actualizar** subredes y descripciones al vuelo (sin tener que borrar y recrear).
-- **🔎 Gestor de Dominios y Resolución Paralela:**
+  - Eliminación y Reasignación asistida de VPNs inactivas con modal interactivo: permite transferir subredes y dominios a otra VPN con desduplicación estricta (`INSERT OR IGNORE`) y opción de purgar el perfil en NetworkManager (`nmcli connection delete`).
+- **🔎 Búsqueda Global Dual (Atajo `Ctrl+K`):**
+  - Paleta flotante rápida (`Ctrl+K` o `Cmd+K`) con vista previa instantánea de VPNs, rutas CIDR y dominios.
+  - Vista completa (`/search?q=...`) con tablas agrupadas y contadores de coincidencias.
+- **⚡ Gestor de Rutas e IPs con Filtros Dinámicos:**
+  - Barra ergonómica de filtrado por VPN con contadores en vivo y botón para "Deseleccionar Todo".
+  - Buscador instantáneo en caliente.
+  - Formulario modal para **editar y actualizar** subredes y descripciones al vuelo.
+- **🌐 Gestor de Dominios y Resolución Paralela:**
   - Resolución DNS concurrente en Go nativo mediante goroutines (ultrarrápida).
+  - Filtro por VPN con contadores y botón para deseleccionar todo.
   - Inyección dinámica de IPs resueltas a NetworkManager para sitios con restricciones geográficas.
-- **💾 Persistencia Dual (SQLite + Git):**
-  - Almacenamiento activo en base de datos SQLite sin CGO (`modernc.org/sqlite`).
+- **💾 Persistencia Dual y Ubicación de Datos (Estándar XDG):**
+  - Base de datos SQLite activa ubicada en `~/.config/multivpn/vpn_data.db` (en Linux).
+  - Si la base de datos no existe al iniciar, se inicializa y siembra automáticamente desde `data/vpn_data_dump.sql`.
   - Auto-volcado en caliente a `data/vpn_data_dump.sql` para trazabilidad de cambios en Git.
+  - Configuración opcional vía variables de entorno en `~/.config/multivpn/config.env`.
 - **🚀 Preparado para Multiplataforma:** Motor desacoplado por interfaz `VPNProvider` (Linux hoy, soporte nativo a Windows y BSD en desarrollo).
 
 ---
@@ -45,8 +53,12 @@ curl -LO https://github.com/terracenter/multivpn/releases/latest/download/multiv
 # Dar permisos de ejecución
 chmod +x multivpn
 
-# Mover a tu PATH (opcional)
-sudo mv multivpn /usr/local/bin/
+# Instalar en tu PATH personal (sin necesidad de sudo)
+mkdir -p ~/.local/bin
+mv multivpn ~/.local/bin/
+
+# O en todo el sistema (requiere sudo):
+# sudo mv multivpn /usr/local/bin/
 ```
 
 **En Windows:**
@@ -54,65 +66,79 @@ Descarga `multivpn.exe` desde [Releases](https://github.com/terracenter/multivpn
 
 ---
 
-### Opción 2: Compilar desde el código fuente (Requiere Go 1.22+)
+### Opción 2: Compilar e instalar desde el código fuente (Requiere Go 1.22+)
 Si tienes Go instalado y quieres compilarlo localmente:
 ```bash
 git clone https://github.com/terracenter/multivpn.git
 cd multivpn
+
+# Compilar el binario local
 make build
+
+# Instalar directamente en ~/.local/bin/multivpn
+make install
 ```
-Esto generará el archivo `./multivpn` en la raíz del proyecto.
+
+> **Nota:** Si tienes `~/.local/bin` en tu `PATH`, podrás ejecutar `multivpn` directamente desde cualquier terminal.
 
 ---
 
 ## 🚀 Inicio Rápido
 
-Una vez que tengas el binario `multivpn`:
+Una vez instalado o descargado el binario:
 
 ### Ejecutar con WebUI Local (Modo Recomendado)
 ```bash
-./multivpn web
+multivpn web
 # O simplemente:
-./multivpn
+multivpn
 ```
 El sistema levantará el servidor en `http://127.0.0.1:8765` y abrirá automáticamente tu navegador predeterminado.
+
+### Atajos de Teclado en la WebUI
+- **`Ctrl + K`** (o **`Cmd + K`** en macOS): Abre la paleta de búsqueda global instantánea para encontrar VPNs, IPs o dominios.
+- **`ESC`**: Cierra el modal activo o la paleta de búsqueda.
 
 ### Uso por Línea de Comandos (Headless / SSH)
 ```bash
 # Ver estado de las conexiones
-./multivpn status
+multivpn status
 
 # Conectar una VPN específica
-./multivpn up FibexValencia
+multivpn up FibexValencia
 
 # Conectar todas las VPNs
-./multivpn up --all
+multivpn up --all
 
 # Desconectar todo
-./multivpn down
+multivpn down
 
 # Escanear y blindar conexiones del sistema (Split Tunneling)
-./multivpn shield
+multivpn shield
 ```
 
 ---
 
-## 🛠️ Compilación y Desarrollo
+## 🛠️ Comandos Makefile Disponibles
 
-Requisitos:
-- **Go 1.22+**
-- **NetworkManager (`nmcli`)** (en Linux)
+| Comando | Descripción |
+|---|---|
+| `make build` | Compila el CSS Tailwind local y genera el binario `./multivpn` |
+| `make install` | Compila y copia el binario a `~/.local/bin/multivpn` |
+| `make uninstall` | Elimina el binario de `~/.local/bin/multivpn` |
+| `make test` | Ejecuta la suite completa de pruebas unitarias (`go test -v ./...`) |
+| `make css` | Recompila `internal/web/static/tailwind.css` usando Tailwind v4 local |
+| `make build-windows` | Compilación cruzada para Windows (`multivpn.exe`) |
+| `make clean` | Elimina binarios compilados locales |
 
-```bash
-# Compilar binario nativo
-make build
+---
 
-# Ejecutar tests
-make test
+## 📁 Ubicación de Archivos en Linux
 
-# Compilación cruzada para Windows (.exe)
-make build-windows
-```
+- **Base de datos SQLite:** `~/.config/multivpn/vpn_data.db`
+- **Archivo de configuración opcional:** `~/.config/multivpn/config.env`
+- **Binario instalado por usuario:** `~/.local/bin/multivpn`
+- **Dump de sincronización Git:** `<repositorio>/data/vpn_data_dump.sql`
 
 ---
 

@@ -5,7 +5,7 @@ LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.GitHash=$(GIT_HASH) -s -w"
 
 TAILWIND_BIN ?= $(shell which tailwindcss 2>/dev/null || echo "$$HOME/Workspace/Desarrollo/Sge/Sge-Go/bin/tailwindcss")
 
-.PHONY: all build run test clean build-windows css
+.PHONY: all build run test clean build-windows css install uninstall
 
 all: build
 
@@ -22,6 +22,16 @@ css:
 build: css
 	go build $(LDFLAGS) -o $(BINARY_NAME) main.go
 
+install: build
+	@mkdir -p $(HOME)/.local/bin
+	@cp $(BINARY_NAME) $(HOME)/.local/bin/$(BINARY_NAME)
+	@chmod 755 $(HOME)/.local/bin/$(BINARY_NAME)
+	@echo "MultiVPN instalado con éxito en $(HOME)/.local/bin/$(BINARY_NAME)"
+
+uninstall:
+	@rm -f $(HOME)/.local/bin/$(BINARY_NAME)
+	@echo "MultiVPN desinstalado de $(HOME)/.local/bin/$(BINARY_NAME)"
+
 run: build
 	./$(BINARY_NAME) web
 
@@ -33,3 +43,4 @@ build-windows:
 
 clean:
 	rm -f $(BINARY_NAME) $(BINARY_NAME).exe
+
