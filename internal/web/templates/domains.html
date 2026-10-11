@@ -12,6 +12,13 @@
     this.editDomain = domain;
     this.editDescription = desc;
     this.showEditModal = true;
+    this.$nextTick(() => {
+      const f = document.getElementById('edit-domain-form');
+      if (f) {
+        f.setAttribute('hx-put', '/api/domains/' + id);
+        htmx.process(f);
+      }
+    });
   }
 }">
   <!-- Encabezado de Dominios -->
@@ -140,8 +147,8 @@
         <button type="button" class="text-slate-500 hover:text-slate-300 text-xl font-bold" @click="showEditModal = false">&times;</button>
       </div>
 
-      <form :action="'/api/domains/' + editID"
-            hx-put=""
+      <form id="edit-domain-form"
+            :action="'/api/domains/' + editID"
             :hx-put="'/api/domains/' + editID"
             hx-target="#domains-table-body"
             hx-swap="outerHTML"

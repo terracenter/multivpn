@@ -12,6 +12,13 @@
     this.editRoute = route;
     this.editDescription = desc;
     this.showEditModal = true;
+    this.$nextTick(() => {
+      const f = document.getElementById('edit-route-form');
+      if (f) {
+        f.setAttribute('hx-put', '/api/routes/' + id);
+        htmx.process(f);
+      }
+    });
   }
 }">
   <!-- Encabezado de Rutas -->
@@ -140,8 +147,8 @@
         <button type="button" class="text-slate-500 hover:text-slate-300 text-xl font-bold" @click="showEditModal = false">&times;</button>
       </div>
 
-      <form :action="'/api/routes/' + editID"
-            hx-put=""
+      <form id="edit-route-form"
+            :action="'/api/routes/' + editID"
             :hx-put="'/api/routes/' + editID"
             hx-target="#routes-table-body"
             hx-swap="outerHTML"
