@@ -77,27 +77,55 @@
           <kbd class="hidden sm:inline-block font-mono text-[10px] bg-slate-900 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded shadow-sm">Ctrl K</kbd>
         </button>
 
-        <button class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
-                hx-post="/api/vpns/scan"
-                hx-target="#dashboard-area"
-                hx-swap="outerHTML"
-                title="Escanear perfiles configurados en NetworkManager">
-          <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span class="hidden sm:inline">Escanear</span>
-        </button>
+        <!-- Botón Escanear con Tooltip Hover -->
+        <div class="relative group">
+          <button class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                  hx-post="/api/vpns/scan"
+                  hx-target="#dashboard-area"
+                  hx-swap="outerHTML">
+            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span class="hidden sm:inline">Escanear</span>
+          </button>
+          <!-- Tooltip Informativo Flotante -->
+          <div class="pointer-events-none absolute right-0 top-full mt-2 w-72 rounded-xl bg-slate-900 border border-slate-700/80 p-3.5 shadow-2xl opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 z-50 text-left">
+            <div class="flex items-center gap-1.5 text-xs font-semibold text-white mb-1.5">
+              <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>¿Qué hace Escanear?</span>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              Consulta las conexiones VPN configuradas en tu sistema (<span class="font-mono text-indigo-300">nmcli</span>), importa nuevos perfiles a SQLite y sincroniza UUIDs sin alterar tu configuración de red.
+            </p>
+          </div>
+        </div>
 
-        <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm shadow-indigo-500/20"
-                hx-post="/api/vpns/shield-all"
-                hx-swap="none"
-                onclick="alert('🛡️ Blindaje ejecutado: Default Gateway bloqueado en todas las conexiones.')"
-                title="Desactivar default gateway e ignorar auto-rutas en todas las VPNs">
-          <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
-          <span>Blindar Todas</span>
-        </button>
+        <!-- Botón Blindar Todas con Tooltip Hover -->
+        <div class="relative group">
+          <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm shadow-indigo-500/20 cursor-pointer"
+                  hx-post="/api/vpns/shield-all"
+                  hx-swap="none"
+                  onclick="alert('Blindaje ejecutado: Default Gateway bloqueado en todas las conexiones.')">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span>Blindar Todas</span>
+          </button>
+          <!-- Tooltip Informativo Flotante -->
+          <div class="pointer-events-none absolute right-0 top-full mt-2 w-72 rounded-xl bg-slate-900 border border-slate-700/80 p-3.5 shadow-2xl opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 z-50 text-left">
+            <div class="flex items-center gap-1.5 text-xs font-semibold text-white mb-1.5">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>¿Qué hace Blindar Todas?</span>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              Aplica <strong class="text-white">Split-Tunneling estricto</strong> en todas las VPNs activando <span class="font-mono text-emerald-300">never-default</span> e <span class="font-mono text-emerald-300">ignore-auto-routes</span>. Evita que ninguna VPN capture tu puerta de enlace ni interrumpa tu Internet habitual.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </header>

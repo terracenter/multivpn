@@ -3,10 +3,25 @@
   showCreateModal: false,
   showEditModal: false,
   selectedVPN: 0,
+  filterDomain: '',
+  filterDesc: '',
   editID: 0,
   editVPNID: 1,
   editDomain: '',
   editDescription: '',
+  fetchFilteredDomains() {
+    const p = new URLSearchParams();
+    p.set('vpn_id', this.selectedVPN);
+    if (this.filterDomain) p.set('domain', this.filterDomain);
+    if (this.filterDesc) p.set('description', this.filterDesc);
+    htmx.ajax('GET', '/api/domains/search?' + p.toString(), '#domains-table-body');
+  },
+  resetFilters() {
+    this.selectedVPN = 0;
+    this.filterDomain = '';
+    this.filterDesc = '';
+    htmx.ajax('GET', '/api/domains/search?vpn_id=0', '#domains-table-body');
+  },
   openEditModal(id, vpnID, domain, desc) {
     this.editID = id;
     this.editVPNID = vpnID;
@@ -36,7 +51,7 @@
       </p>
     </div>
 
-    <button @click="showCreateModal = true" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 self-start sm:self-auto">
+    <button @click="showCreateModal = true" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 self-start sm:self-auto cursor-pointer">
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
       </svg>
@@ -48,7 +63,7 @@
   <div class="flex flex-wrap items-center gap-2">
     <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">Filtrar por VPN:</span>
     <button type="button"
-            @click="selectedVPN = 0; $nextTick(() => htmx.trigger($refs.domainSearch, 'search'))"
+            @click="selectedVPN = 0; fetchFilteredDomains()"
             :class="selectedVPN === 0 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'"
             class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer">
       <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -59,7 +74,7 @@
     </button>
 
     <button type="button"
-            @click="selectedVPN = -1; $nextTick(() => htmx.trigger($refs.domainSearch, 'search'))"
+            @click="selectedVPN = -1; fetchFilteredDomains()"
             :class="selectedVPN === -1 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'"
             class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer">
       <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -72,7 +87,7 @@
 
     {{range .VPNFilters}}
     <button type="button"
-            @click="selectedVPN = (selectedVPN === {{.ID}} ? 0 : {{.ID}}); $nextTick(() => htmx.trigger($refs.domainSearch, 'search'))"
+            @click="selectedVPN = (selectedVPN === {{.ID}} ? 0 : {{.ID}}); fetchFilteredDomains()"
             :class="selectedVPN === {{.ID}} ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 border-transparent' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'"
             class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer">
       <span class="w-1.5 h-1.5 rounded-full" :class="selectedVPN === {{.ID}} ? 'bg-white' : 'bg-cyan-400'"></span>
@@ -82,35 +97,64 @@
     {{end}}
   </div>
 
-  <!-- Barra de Búsqueda Reactiva HTMX -->
-  <div class="relative">
-    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    </div>
-    <input type="text"
-           name="q"
-           x-ref="domainSearch"
-           :hx-vals="JSON.stringify({ vpn_id: selectedVPN })"
-           class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors shadow-sm"
-           placeholder="Buscar en tiempo real por dominio (ej: claude.ai, openai.com) o descripción..."
-           hx-get="/api/domains/search"
-           hx-trigger="keyup changed delay:180ms, search"
-           hx-target="#domains-table-body">
-  </div>
-
-  <!-- Tabla de Datos Profesional -->
+  <!-- Tabla de Datos Profesional con Filtros por Columna Integrados -->
   <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full border-collapse text-left">
         <thead>
-          <tr class="bg-slate-950/70 text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-800">
-            <th class="py-3.5 px-4 w-16">ID</th>
-            <th class="py-3.5 px-4 w-44">VPN</th>
+          <!-- Fila de Encabezados -->
+          <tr class="bg-slate-950/80 text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-800">
+            <th class="py-3.5 px-4 w-52">VPN</th>
             <th class="py-3.5 px-4 w-72">Nombre de Dominio (FQDN)</th>
             <th class="py-3.5 px-4">Descripción / Servicio</th>
             <th class="py-3.5 px-4 text-right w-36">Acciones</th>
+          </tr>
+          <!-- Fila de Filtros por Columna -->
+          <tr class="bg-slate-950/40 border-b border-slate-800 text-xs">
+            <!-- Filtro VPN -->
+            <th class="py-2.5 px-4 font-normal">
+              <select x-model.number="selectedVPN"
+                      @change="fetchFilteredDomains()"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                <option value="0">Todas las VPNs</option>
+                <option value="-1">-- Ninguna --</option>
+                {{range .VPNFilters}}
+                <option value="{{.ID}}">{{.Name}} ({{.Count}})</option>
+                {{end}}
+              </select>
+            </th>
+            <!-- Filtro Nombre de Dominio (FQDN) -->
+            <th class="py-2.5 px-4 font-normal">
+              <div class="relative">
+                <input type="text"
+                       x-model="filterDomain"
+                       @input.debounce.200ms="fetchFilteredDomains()"
+                       placeholder="Filtrar por dominio (FQDN)..."
+                       class="w-full bg-slate-900 border border-slate-800 rounded-lg pl-3 pr-2 py-1.5 text-xs font-mono text-cyan-300 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+              </div>
+            </th>
+            <!-- Filtro Descripción / Servicio -->
+            <th class="py-2.5 px-4 font-normal">
+              <div class="relative">
+                <input type="text"
+                       x-model="filterDesc"
+                       @input.debounce.200ms="fetchFilteredDomains()"
+                       placeholder="Filtrar por servicio..."
+                       class="w-full bg-slate-900 border border-slate-800 rounded-lg pl-3 pr-2 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+              </div>
+            </th>
+            <!-- Acción Limpiar Filtros -->
+            <th class="py-2.5 px-4 text-right font-normal">
+              <button type="button"
+                      @click="resetFilters()"
+                      title="Restablecer todos los filtros"
+                      class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1">
+                <svg class="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Limpiar</span>
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody id="domains-table-body" class="divide-y divide-slate-800/40">

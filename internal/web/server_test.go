@@ -109,13 +109,20 @@ func TestSearchEndpoints(t *testing.T) {
 		t.Errorf("Código de estado esperado 200 para /api/search/quick, se obtuvo %d", rrQuick.Code)
 	}
 
-	// Test GET /api/search/quick con q vacío
-	reqEmpty, _ := http.NewRequest(http.MethodGet, "/api/search/quick", nil)
-	rrEmpty := httptest.NewRecorder()
-	server.handleSearchQuick(rrEmpty, reqEmpty)
+	// Test GET /api/routes/search con filtros de columna
+	reqRouteFilter, _ := http.NewRequest(http.MethodGet, "/api/routes/search?route=10.&description=NOC", nil)
+	rrRouteFilter := httptest.NewRecorder()
+	server.handleRoutesSearch(rrRouteFilter, reqRouteFilter)
+	if rrRouteFilter.Code != http.StatusOK {
+		t.Errorf("Código de estado esperado 200 para /api/routes/search, se obtuvo %d", rrRouteFilter.Code)
+	}
 
-	if rrEmpty.Code != http.StatusOK {
-		t.Errorf("Código de estado esperado 200 para /api/search/quick vacío, se obtuvo %d", rrEmpty.Code)
+	// Test GET /api/domains/search con filtros de columna
+	reqDomainFilter, _ := http.NewRequest(http.MethodGet, "/api/domains/search?domain=claude&description=AI", nil)
+	rrDomainFilter := httptest.NewRecorder()
+	server.handleDomainsSearch(rrDomainFilter, reqDomainFilter)
+	if rrDomainFilter.Code != http.StatusOK {
+		t.Errorf("Código de estado esperado 200 para /api/domains/search, se obtuvo %d", rrDomainFilter.Code)
 	}
 }
 

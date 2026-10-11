@@ -414,8 +414,13 @@ func (s *Server) renderDashboardFragment(w http.ResponseWriter) {
 // handleRoutesSearch responde con filas filtradas para HTMX
 func (s *Server) handleRoutesSearch(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
+	routeFilter := r.URL.Query().Get("route")
+	descFilter := r.URL.Query().Get("description")
+	if descFilter == "" {
+		descFilter = r.URL.Query().Get("desc")
+	}
 	vpnID, _ := strconv.ParseInt(r.URL.Query().Get("vpn_id"), 10, 64)
-	routes, _ := s.store.GetRoutes(vpnID, query)
+	routes, _ := s.store.GetRoutesFiltered(vpnID, routeFilter, descFilter, query)
 	data := pageData{Routes: routes}
 	_ = s.templates["route_rows"].ExecuteTemplate(w, "route_rows", data)
 }
@@ -478,8 +483,13 @@ func (s *Server) handleRouteItem(w http.ResponseWriter, r *http.Request) {
 // handleDomainsSearch responde con filas filtradas para HTMX
 func (s *Server) handleDomainsSearch(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
+	domainFilter := r.URL.Query().Get("domain")
+	descFilter := r.URL.Query().Get("description")
+	if descFilter == "" {
+		descFilter = r.URL.Query().Get("desc")
+	}
 	vpnID, _ := strconv.ParseInt(r.URL.Query().Get("vpn_id"), 10, 64)
-	domains, _ := s.store.GetDomains(vpnID, query)
+	domains, _ := s.store.GetDomainsFiltered(vpnID, domainFilter, descFilter, query)
 	data := pageData{Domains: domains}
 	_ = s.templates["domain_rows"].ExecuteTemplate(w, "domain_rows", data)
 }

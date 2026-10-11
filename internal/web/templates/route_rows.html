@@ -1,11 +1,8 @@
 {{define "route_rows"}}
 {{range .Routes}}
 <tr id="route-row-{{.ID}}" class="hover:bg-slate-800/40 transition-colors border-b border-slate-800/60 text-xs">
-  <td class="py-3.5 px-4 font-mono text-slate-500">
-    #{{.ID}}
-  </td>
   <td class="py-3.5 px-4">
-    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
       <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
       {{.VPNName}}
     </span>
@@ -22,7 +19,7 @@
   </td>
   <td class="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
     <button type="button"
-            class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors inline-flex items-center gap-1.5"
+            class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer"
             @click="openEditModal({{.ID}}, {{.VPNID}}, '{{.Route}}', '{{.Description}}')">
       <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -30,7 +27,7 @@
       <span>Editar</span>
     </button>
     <button type="button"
-            class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-2 py-1 rounded-lg text-xs font-medium transition-colors inline-flex items-center"
+            class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-2 py-1 rounded-lg text-xs font-medium transition-colors inline-flex items-center cursor-pointer"
             hx-delete="/api/routes/{{.ID}}"
             hx-target="#route-row-{{.ID}}"
             hx-swap="outerHTML"
@@ -44,7 +41,7 @@
 </tr>
 {{else}}
 <tr>
-  <td colspan="5" class="text-center text-slate-500 py-12">
+  <td colspan="4" class="text-center text-slate-500 py-12">
     <div class="flex flex-col items-center justify-center gap-2">
       <svg class="w-8 h-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

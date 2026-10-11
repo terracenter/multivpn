@@ -317,8 +317,8 @@ func (s *Storage) ReassignConnectionData(fromVPNID, toVPNID int64) error {
 	return nil
 }
 
-// GetRoutes retorna las rutas asociadas, con soporte opcional de filtro por vpn_id y búsqueda textual
-func (s *Storage) GetRoutes(vpnID int64, search string) ([]models.Route, error) {
+// GetRoutesFiltered retorna las rutas asociadas, con soporte opcional de filtro por vpn_id, ruta, descripción y búsqueda general
+func (s *Storage) GetRoutesFiltered(vpnID int64, routeFilter, descFilter, search string) ([]models.Route, error) {
 	query := `
 		SELECT r.id, r.vpn_id, c.name, r.route, COALESCE(r.description, '')
 		FROM vpn_routes r
@@ -331,6 +331,16 @@ func (s *Storage) GetRoutes(vpnID int64, search string) ([]models.Route, error) 
 		args = append(args, vpnID)
 	} else if vpnID < 0 {
 		query += " AND 1 = 0"
+	}
+
+	if routeFilter != "" {
+		query += " AND r.route LIKE ?"
+		args = append(args, "%"+routeFilter+"%")
+	}
+
+	if descFilter != "" {
+		query += " AND r.description LIKE ?"
+		args = append(args, "%"+descFilter+"%")
 	}
 
 	if search != "" {
@@ -356,6 +366,11 @@ func (s *Storage) GetRoutes(vpnID int64, search string) ([]models.Route, error) 
 		list = append(list, r)
 	}
 	return list, nil
+}
+
+// GetRoutes retorna las rutas asociadas, con soporte opcional de filtro por vpn_id y búsqueda textual
+func (s *Storage) GetRoutes(vpnID int64, search string) ([]models.Route, error) {
+	return s.GetRoutesFiltered(vpnID, "", "", search)
 }
 
 // GetRoute obtiene una ruta específica por ID
@@ -402,8 +417,8 @@ func (s *Storage) DeleteRoute(id int64) error {
 	return err
 }
 
-// GetDomains retorna los dominios registrados
-func (s *Storage) GetDomains(vpnID int64, search string) ([]models.Domain, error) {
+// GetDomainsFiltered retorna los dominios registrados con filtros específicos por columna y/o búsqueda general
+func (s *Storage) GetDomainsFiltered(vpnID int64, domainFilter, descFilter, search string) ([]models.Domain, error) {
 	query := `
 		SELECT d.id, d.vpn_id, c.name, d.domain, COALESCE(d.description, '')
 		FROM vpn_domains d
@@ -416,6 +431,16 @@ func (s *Storage) GetDomains(vpnID int64, search string) ([]models.Domain, error
 		args = append(args, vpnID)
 	} else if vpnID < 0 {
 		query += " AND 1 = 0"
+	}
+
+	if domainFilter != "" {
+		query += " AND d.domain LIKE ?"
+		args = append(args, "%"+domainFilter+"%")
+	}
+
+	if descFilter != "" {
+		query += " AND d.description LIKE ?"
+		args = append(args, "%"+descFilter+"%")
 	}
 
 	if search != "" {
@@ -441,6 +466,11 @@ func (s *Storage) GetDomains(vpnID int64, search string) ([]models.Domain, error
 		list = append(list, d)
 	}
 	return list, nil
+}
+
+// GetDomains retorna los dominios registrados
+func (s *Storage) GetDomains(vpnID int64, search string) ([]models.Domain, error) {
+	return s.GetDomainsFiltered(vpnID, "", "", search)
 }
 
 // GetDomain obtiene un dominio por ID
