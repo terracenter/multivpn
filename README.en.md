@@ -13,14 +13,20 @@ Built with **Go** as a standalone single static binary without heavy external de
 
 ## 📦 Installation & Download
 
-### Option 1: Download precompiled binary (Recommended, no Go required)
-Download directly from [GitHub Releases](https://github.com/terracenter/multivpn/releases):
-
-**On Linux:**
+### Option 1: Quick one-liner installer (Recommended for Linux)
+Run the following in your terminal to download, verify, and install:
 ```bash
-curl -LO https://github.com/terracenter/multivpn/releases/latest/download/multivpn
-chmod +x multivpn
-sudo mv multivpn /usr/local/bin/ # Optional
+curl -fsSL https://raw.githubusercontent.com/terracenter/multivpn/main/install.sh | bash
+```
+
+---
+
+### Option 2: Manual installation (Linux)
+```bash
+curl -fsSL -o multivpn https://github.com/terracenter/multivpn/releases/latest/download/multivpn
+mkdir -p ~/.local/bin
+install -m 755 multivpn ~/.local/bin/multivpn
+rm -f multivpn
 ```
 
 **On Windows:**

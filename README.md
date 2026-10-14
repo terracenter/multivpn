@@ -42,23 +42,28 @@ Desarrollado en **Go** como un binario estático único, sin dependencias extern
 
 Tienes dos formas de utilizar MultiVPN:
 
-### Opción 1: Descargar el binario precompilado (Recomendado, no requiere Go)
-Si no tienes Go instalado en tu máquina (por ejemplo, en tu laptop), descarga directamente el binario compilado listo para usar desde [GitHub Releases](https://github.com/terracenter/multivpn/releases):
-
-**En Linux:**
+### Opción 1: Instalador rápido con una sola línea (Recomendado en Linux)
+Ejecuta en tu terminal para descargar, verificar e instalar la última versión:
 ```bash
-# Descargar el ejecutable
-curl -LO https://github.com/terracenter/multivpn/releases/latest/download/multivpn
+curl -fsSL https://raw.githubusercontent.com/terracenter/multivpn/main/install.sh | bash
+```
+> El instalador detecta la arquitectura, valida la integridad del ejecutable y lo instala en `~/.local/bin/multivpn` (o en `/usr/local/bin/` si se ejecuta con `sudo`).
 
-# Dar permisos de ejecución
-chmod +x multivpn
+---
 
-# Instalar en tu PATH personal (sin necesidad de sudo)
+### Opción 2: Instalación manual paso a paso (Linux)
+Si prefieres no usar el script, descarga directamente el ejecutable desde [GitHub Releases](https://github.com/terracenter/multivpn/releases):
+```bash
+# Descargar con banderas seguras
+curl -fsSL -o multivpn https://github.com/terracenter/multivpn/releases/latest/download/multivpn
+
+# Asignar permisos e instalar en tu PATH de usuario
 mkdir -p ~/.local/bin
-mv multivpn ~/.local/bin/
+install -m 755 multivpn ~/.local/bin/multivpn
+rm -f multivpn
 
 # O en todo el sistema (requiere sudo):
-# sudo mv multivpn /usr/local/bin/
+# sudo install -m 755 multivpn /usr/local/bin/multivpn
 ```
 
 **En Windows:**
