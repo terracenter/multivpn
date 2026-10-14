@@ -40,41 +40,21 @@ Desarrollado en **Go** como un binario estático único, sin dependencias extern
 
 ## 📦 Instalación y Descarga
 
-Tienes tres formas de utilizar MultiVPN:
-
-### Opción 1: Instalador rápido con una sola línea (Recomendado en Linux)
-Ejecuta en tu terminal para descargar, verificar e instalar la última versión:
+### En Linux (Instalación Rápida Oficial)
+Ejecuta en tu terminal para descargar, verificar e instalar la última versión oficial:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/terracenter/multivpn/main/install.sh | bash
 ```
-> El instalador detecta la arquitectura, valida la integridad del ejecutable, resuelve cualquier conflicto previo y lo instala en `~/.local/bin/multivpn` (o en `/usr/local/bin/` si se ejecuta con `sudo`).
+> El instalador detecta la arquitectura de tu sistema, valida la integridad del ejecutable, resuelve automáticamente cualquier conflicto previo de rutas y lo instala en `~/.local/bin/multivpn` (o en `/usr/local/bin/` si se ejecuta con `sudo`).
 
 ---
 
-### Opción 2: Instalación manual paso a paso (Linux)
-Si prefieres no usar el script, descarga directamente el ejecutable desde [GitHub Releases](https://github.com/terracenter/multivpn/releases):
-```bash
-# Descargar el binario oficial
-curl -fsSL -o multivpn https://github.com/terracenter/multivpn/releases/latest/download/multivpn
-
-# Preparar PATH y limpiar conflicto si existiera una carpeta previa con ese nombre
-mkdir -p ~/.local/bin
-[ -d ~/.local/bin/multivpn ] && rm -rf ~/.local/bin/multivpn
-
-# Instalar con permisos de ejecución y limpiar archivo temporal
-install -m 755 multivpn ~/.local/bin/multivpn
-rm -f multivpn
-
-# O en todo el sistema (requiere sudo):
-# sudo install -m 755 multivpn /usr/local/bin/multivpn
-```
-
-**En Windows:**
-Descarga `multivpn.exe` desde [Releases](https://github.com/terracenter/multivpn/releases) y ejecútalo directamente desde la terminal o PowerShell.
+### En Windows
+Descarga `multivpn.exe` directamente desde [GitHub Releases](https://github.com/terracenter/multivpn/releases) y ejecútalo en la terminal o PowerShell.
 
 ---
 
-### Opción 3: Compilar e instalar desde el código fuente (Requiere Go 1.22+)
+### Compilar desde el código fuente (Para Desarrolladores - Go 1.22+)
 Si tienes Go instalado y quieres compilarlo localmente:
 ```bash
 git clone https://github.com/terracenter/multivpn.git
