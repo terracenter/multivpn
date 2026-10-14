@@ -13,6 +13,8 @@ Built with **Go** as a standalone single static binary without heavy external de
 
 ## 📦 Installation & Download
 
+There are three ways to install and use MultiVPN:
+
 ### Option 1: Quick one-liner installer (Recommended for Linux)
 Run the following in your terminal to download, verify, and install:
 ```bash
@@ -23,8 +25,14 @@ curl -fsSL https://raw.githubusercontent.com/terracenter/multivpn/main/install.s
 
 ### Option 2: Manual installation (Linux)
 ```bash
+# Download official binary
 curl -fsSL -o multivpn https://github.com/terracenter/multivpn/releases/latest/download/multivpn
+
+# Ensure directory and resolve any prior folder collision
 mkdir -p ~/.local/bin
+[ -d ~/.local/bin/multivpn ] && rm -rf ~/.local/bin/multivpn
+
+# Install executable and remove temporary download
 install -m 755 multivpn ~/.local/bin/multivpn
 rm -f multivpn
 ```
@@ -34,7 +42,7 @@ Download `multivpn.exe` from [Releases](https://github.com/terracenter/multivpn/
 
 ---
 
-### Option 2: Build from source (Requires Go 1.22+)
+### Option 3: Build from source (Requires Go 1.22+)
 ```bash
 git clone https://github.com/terracenter/multivpn.git
 cd multivpn
