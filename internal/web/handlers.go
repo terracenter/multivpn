@@ -150,17 +150,18 @@ func (s *Server) handleVPNUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Si es salida, resolver dominios en paralelo
-	var resolvedIPs []string
+	var targets models.ResolvedTargets
 	if target.IsSalida {
 		dbDomains, _ := s.store.GetDomains(target.ID, "")
 		var domainList []string
 		for _, d := range dbDomains {
 			domainList = append(domainList, d.Domain)
 		}
-		resolvedIPs = network.ResolveDomainsParallel(domainList, 3*time.Second)
+		isDual := network.IsHostDualStack()
+		targets = network.ResolveDomainsParallel(domainList, 3*time.Second, isDual)
 	}
 
-	_ = s.netMgr.Up(*target, routeCIDRs, resolvedIPs)
+	_ = s.netMgr.Up(*target, routeCIDRs, targets)
 
 	// Refrescar estado para la tarjeta
 	active, _ := s.netMgr.IsConnectionActive(target.Name)
@@ -242,17 +243,18 @@ func (s *Server) handleVPNUpAll(w http.ResponseWriter, r *http.Request) {
 			routeCIDRs = append(routeCIDRs, rt.Route)
 		}
 
-		var resolvedIPs []string
+		var targets models.ResolvedTargets
 		if c.IsSalida {
 			dbDomains, _ := s.store.GetDomains(c.ID, "")
 			var doms []string
 			for _, d := range dbDomains {
 				doms = append(doms, d.Domain)
 			}
-			resolvedIPs = network.ResolveDomainsParallel(doms, 3*time.Second)
+			isDual := network.IsHostDualStack()
+			targets = network.ResolveDomainsParallel(doms, 3*time.Second, isDual)
 		}
 
-		_ = s.netMgr.Up(c, routeCIDRs, resolvedIPs)
+		_ = s.netMgr.Up(c, routeCIDRs, targets)
 	}
 
 	// Devolver el fragmento de dashboard actualizado

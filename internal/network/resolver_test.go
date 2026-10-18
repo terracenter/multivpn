@@ -26,13 +26,16 @@ func TestCleanDomain(t *testing.T) {
 }
 
 func TestResolveDomainsParallel(t *testing.T) {
-	// Probar con un dominio estándar de DNS
 	domains := []string{"one.one.one.one", "dns.google"}
-	ips := ResolveDomainsParallel(domains, 3*time.Second)
 
-	if len(ips) == 0 {
-		t.Logf("Aviso: no se resolvieron IPs (posible falta de conexión externa en sandbox)")
-	} else {
-		t.Logf("IPs resueltas con éxito en Go nativo: %v", ips)
+	// Modo solo IPv4
+	targetsV4 := ResolveDomainsParallel(domains, 3*time.Second, false)
+	t.Logf("IPs resueltas en modo IPv4: %v", targetsV4.IPv4)
+	if len(targetsV4.IPv6) > 0 {
+		t.Errorf("Modo IPv4 devolvió IPv6: %v", targetsV4.IPv6)
 	}
+
+	// Modo Dual-Stack
+	targetsDual := ResolveDomainsParallel(domains, 3*time.Second, true)
+	t.Logf("IPs resueltas en modo Dual-Stack -> IPv4: %v, IPv6: %v", targetsDual.IPv4, targetsDual.IPv6)
 }

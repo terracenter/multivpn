@@ -17,7 +17,7 @@ type VPNProvider interface {
 	HasDefaultGatewayRisk(connName string) (bool, error)
 
 	// Up prepara las rutas, aplica la configuración y levanta el túnel
-	Up(conn models.Connection, routes []string, resolvedIPs []string) error
+	Up(conn models.Connection, routes []string, targets models.ResolvedTargets) error
 
 	// Down desconecta el túnel especificado
 	Down(connName string) error

@@ -10,6 +10,7 @@ import (
 
 	"github.com/terracenter/multivpn/internal/config"
 	"github.com/terracenter/multivpn/internal/db"
+	"github.com/terracenter/multivpn/internal/models"
 	"github.com/terracenter/multivpn/internal/network"
 	"github.com/terracenter/multivpn/internal/web"
 )
@@ -165,17 +166,18 @@ func runCLIUp(args []string, store *db.Storage, netMgr network.VPNProvider) {
 				routes = append(routes, r.Route)
 			}
 
-			var resolvedIPs []string
+			var targets models.ResolvedTargets
 			if c.IsSalida {
 				dbDomains, _ := store.GetDomains(c.ID, "")
 				var doms []string
 				for _, d := range dbDomains {
 					doms = append(doms, d.Domain)
 				}
-				resolvedIPs = network.ResolveDomainsParallel(doms, 3*time.Second)
+				isDual := network.IsHostDualStack()
+				targets = network.ResolveDomainsParallel(doms, 3*time.Second, isDual)
 			}
 
-			if err := netMgr.Up(c, routes, resolvedIPs); err != nil {
+			if err := netMgr.Up(c, routes, targets); err != nil {
 				fmt.Printf("[ERROR] Falla conectando %s: %v\n", c.Name, err)
 			} else {
 				fmt.Printf("[OK] Conexión %s levantada exitosamente.\n", c.Name)

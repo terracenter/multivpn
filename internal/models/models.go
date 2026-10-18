@@ -48,3 +48,9 @@ type SearchResults struct {
 	Domains     []Domain     `json:"domains"`
 	TotalCount  int          `json:"total_count"`
 }
+
+// ResolvedTargets contiene las direcciones IP resueltas clasificadas por versión de protocolo
+type ResolvedTargets struct {
+	IPv4 []string `json:"ipv4"`
+	IPv6 []string `json:"ipv6"`
+}

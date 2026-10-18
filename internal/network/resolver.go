@@ -7,17 +7,26 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/terracenter/multivpn/internal/models"
 )
 
-// ResolveDomainsParallel resuelve concurrentemente una lista de nombres de dominio a direcciones IPv4
-func ResolveDomainsParallel(domains []string, timeout time.Duration) []string {
+// ResolveDomainsParallel resuelve concurrentemente una lista de nombres de dominio clasificándolos en IPv4 e IPv6
+func ResolveDomainsParallel(domains []string, timeout time.Duration, isDualStack bool) models.ResolvedTargets {
+	var targets models.ResolvedTargets
 	if len(domains) == 0 {
-		return nil
+		return targets
 	}
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	ipSet := make(map[string]struct{})
+	ipv4Set := make(map[string]struct{})
+	ipv6Set := make(map[string]struct{})
+
+	networkType := "ip4"
+	if isDualStack {
+		networkType = "ip"
+	}
 
 	for _, rawDomain := range domains {
 		clean := cleanDomain(rawDomain)
@@ -32,7 +41,7 @@ func ResolveDomainsParallel(domains []string, timeout time.Duration) []string {
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 
-			ips, err := net.DefaultResolver.LookupIP(ctx, "ip4", dom)
+			ips, err := net.DefaultResolver.LookupIP(ctx, networkType, dom)
 			if err != nil {
 				return
 			}
@@ -40,7 +49,9 @@ func ResolveDomainsParallel(domains []string, timeout time.Duration) []string {
 			mu.Lock()
 			for _, ip := range ips {
 				if ipv4 := ip.To4(); ipv4 != nil {
-					ipSet[ipv4.String()] = struct{}{}
+					ipv4Set[ipv4.String()] = struct{}{}
+				} else if isDualStack && ip.To16() != nil {
+					ipv6Set[ip.String()] = struct{}{}
 				}
 			}
 			mu.Unlock()
@@ -49,12 +60,14 @@ func ResolveDomainsParallel(domains []string, timeout time.Duration) []string {
 
 	wg.Wait()
 
-	result := make([]string, 0, len(ipSet))
-	for ip := range ipSet {
-		result = append(result, ip)
+	for ip := range ipv4Set {
+		targets.IPv4 = append(targets.IPv4, ip)
+	}
+	for ip := range ipv6Set {
+		targets.IPv6 = append(targets.IPv6, ip)
 	}
 
-	return result
+	return targets
 }
 
 // cleanDomain limpia URLs o paths dejando únicamente el hostname FQDN

@@ -5,16 +5,22 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/terracenter/multivpn/internal/models"
 )
 
 // LinuxManager implementa VPNProvider usando NetworkManager (nmcli) en Linux
-type LinuxManager struct{}
+type LinuxManager struct {
+	mu         sync.Mutex
+	blackholes map[string][]string // connName -> []ipv6_blackholed
+}
 
 // NewLinuxManager crea una nueva instancia del gestor Linux
 func NewLinuxManager() *LinuxManager {
-	return &LinuxManager{}
+	return &LinuxManager{
+		blackholes: make(map[string][]string),
+	}
 }
 
 // ScanConnections detecta perfiles de VPN en NetworkManager (vpn y wireguard)
@@ -81,7 +87,6 @@ func (m *LinuxManager) HasDefaultGatewayRisk(connName string) (bool, error) {
 		return false, err
 	}
 	val := strings.TrimSpace(string(output))
-	// Si es "no" o está vacío, significa que el sistema usará el gateway por defecto de la VPN
 	return val == "no" || val == "", nil
 }
 
@@ -94,41 +99,136 @@ func (m *LinuxManager) IsConnectionActive(connName string) (bool, error) {
 	return activeMap[connName], nil
 }
 
-// Up aplica rutas estáticas + dominios resueltos y levanta la VPN
-func (m *LinuxManager) Up(conn models.Connection, routes []string, resolvedIPs []string) error {
-	var routeElements []string
+// hasIPv6Support verifica si el perfil de conexión tiene soporte o dirección IPv6
+func (m *LinuxManager) hasIPv6Support(connName string) bool {
+	cmd := exec.Command("nmcli", "-g", "ipv6.method,ipv6.addresses", "connection", "show", connName)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	val := strings.TrimSpace(string(output))
+	if strings.Contains(val, "disabled") || val == "" || val == ":" {
+		return false
+	}
+	return true
+}
 
-	// Agregar rutas CIDR estáticas
+// applyBlackholeIPv6 aplica rutas 'unreachable' a IPs IPv6 para forzar a las aplicaciones a usar IPv4 (Blindaje Anti-Fugas)
+func (m *LinuxManager) applyBlackholeIPv6(connName string, ips []string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Limpiar registros previos si los hubiera
+	if old, exists := m.blackholes[connName]; exists {
+		for _, ip := range old {
+			_ = exec.Command("ip", "-6", "route", "del", ip+"/128", "type", "unreachable").Run()
+			_ = exec.Command("sudo", "ip", "-6", "route", "del", ip+"/128", "type", "unreachable").Run()
+		}
+	}
+
+	var applied []string
+	for _, ip := range ips {
+		ip = strings.TrimSpace(ip)
+		if ip == "" {
+			continue
+		}
+		cmd := exec.Command("ip", "-6", "route", "replace", ip+"/128", "type", "unreachable")
+		if err := cmd.Run(); err != nil {
+			_ = exec.Command("sudo", "ip", "-6", "route", "replace", ip+"/128", "type", "unreachable").Run()
+		}
+		applied = append(applied, ip)
+	}
+	m.blackholes[connName] = applied
+}
+
+// clearBlackholeIPv6 elimina las rutas unreachable registradas para la conexión
+func (m *LinuxManager) clearBlackholeIPv6(connName string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if ips, exists := m.blackholes[connName]; exists {
+		for _, ip := range ips {
+			_ = exec.Command("ip", "-6", "route", "del", ip+"/128", "type", "unreachable").Run()
+			_ = exec.Command("sudo", "ip", "-6", "route", "del", ip+"/128", "type", "unreachable").Run()
+		}
+		delete(m.blackholes, connName)
+	}
+}
+
+// Up aplica rutas estáticas + dominios resueltos y levanta la VPN adaptándose inteligentemente a IPv4 o Dual-Stack
+func (m *LinuxManager) Up(conn models.Connection, routes []string, targets models.ResolvedTargets) error {
+	var ipv4Routes []string
+	var ipv6Routes []string
+
+	// Separar rutas CIDR estáticas en IPv4 e IPv6
 	for _, r := range routes {
 		r = strings.TrimSpace(r)
-		if r != "" {
-			routeElements = append(routeElements, fmt.Sprintf("%s 0.0.0.0", r))
+		if r == "" {
+			continue
+		}
+		if strings.Contains(r, ":") {
+			ipv6Routes = append(ipv6Routes, fmt.Sprintf("%s ::", r))
+		} else {
+			ipv4Routes = append(ipv4Routes, fmt.Sprintf("%s 0.0.0.0", r))
 		}
 	}
 
-	// Agregar IPs de dominios resueltos como /32
-	for _, ip := range resolvedIPs {
+	// Agregar IPs IPv4 de dominios resueltos como /32
+	for _, ip := range targets.IPv4 {
 		ip = strings.TrimSpace(ip)
 		if ip != "" {
-			routeElements = append(routeElements, fmt.Sprintf("%s/32 0.0.0.0", ip))
+			ipv4Routes = append(ipv4Routes, fmt.Sprintf("%s/32 0.0.0.0", ip))
 		}
 	}
 
-	routeStr := strings.Join(routeElements, ", ")
+	isDual := IsHostDualStack()
+	vpnHasIPv6 := m.hasIPv6Support(conn.Name)
 
-	// Parámetros de NetworkManager para máxima estabilidad y split-tunneling
 	args := []string{"connection", "modify", conn.Name,
-		"ipv4.routes", routeStr,
+		"ipv4.routes", strings.Join(ipv4Routes, ", "),
 		"ipv4.never-default", "yes",
 		"ipv4.ignore-auto-routes", "yes",
-		"ipv6.method", "disabled",
-		"ipv6.routes", "",
-		"ipv6.addresses", "",
-		"ipv6.gateway", "",
+	}
+
+	if isDual && vpnHasIPv6 {
+		// Dual-Stack Completo: Tanto el host local como la VPN soportan IPv6
+		for _, ip := range targets.IPv6 {
+			ip = strings.TrimSpace(ip)
+			if ip != "" {
+				ipv6Routes = append(ipv6Routes, fmt.Sprintf("%s/128 ::", ip))
+			}
+		}
+
+		args = append(args,
+			"ipv6.routes", strings.Join(ipv6Routes, ", "),
+			"ipv6.never-default", "yes",
+			"ipv6.ignore-auto-routes", "yes",
+		)
+		m.clearBlackholeIPv6(conn.Name)
+	} else if isDual && !vpnHasIPv6 {
+		// Host tiene IPv6 pero VPN es solo IPv4 -> Opción A: Blindaje Activo Anti-Fugas
+		args = append(args,
+			"ipv6.method", "disabled",
+			"ipv6.routes", "",
+			"ipv6.addresses", "",
+			"ipv6.gateway", "",
+		)
+		if len(targets.IPv6) > 0 {
+			m.applyBlackholeIPv6(conn.Name, targets.IPv6)
+		}
+	} else {
+		// Host solo IPv4
+		args = append(args,
+			"ipv6.method", "disabled",
+			"ipv6.routes", "",
+			"ipv6.addresses", "",
+			"ipv6.gateway", "",
+		)
+		m.clearBlackholeIPv6(conn.Name)
 	}
 
 	if conn.IsSalida {
-		// En perfiles de salida no sobreescribir el DNS del sistema para no alterar AdGuard o DNS local
+		// En perfiles de salida no sobreescribir el DNS del sistema
 		args = append(args, "ipv4.ignore-auto-dns", "yes")
 	}
 
@@ -146,8 +246,9 @@ func (m *LinuxManager) Up(conn models.Connection, routes []string, resolvedIPs [
 	return nil
 }
 
-// Down desconecta el perfil
+// Down desconecta el perfil y limpia cualquier ruta de blindaje anti-fugas activa
 func (m *LinuxManager) Down(connName string) error {
+	m.clearBlackholeIPv6(connName)
 	cmd := exec.Command("nmcli", "connection", "down", connName)
 	_ = cmd.Run()
 	return nil
@@ -155,6 +256,7 @@ func (m *LinuxManager) Down(connName string) error {
 
 // DeleteConnectionProfile elimina el perfil en NetworkManager
 func (m *LinuxManager) DeleteConnectionProfile(connName string) error {
+	m.clearBlackholeIPv6(connName)
 	cmd := exec.Command("nmcli", "connection", "delete", connName)
 	return cmd.Run()
 }
