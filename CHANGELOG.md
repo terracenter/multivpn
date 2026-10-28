@@ -10,6 +10,8 @@ El formato sigue Keep a Changelog y versionado SemVer cuando aplique.
 
 ### Changed
 
+- Regla única de repo y vault: se completan `ROADMAP.md` y el `.gitignore` (4 entradas para los archivos locales de agentes); la ficha, las guías y las bitácoras viven en el vault.
+
 ### Fixed
 
 ### Security
